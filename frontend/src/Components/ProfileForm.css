@@ -1,0 +1,284 @@
+/* BACKGROUND */
+.modern-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at top, #1e293b, #020617);
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* CARD */
+.modern-card {
+  width: 500px;
+  padding: 30px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  color: white;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+/* HEADER */
+.header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.project-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  font-size: 14px;
+}
+
+.subtitle {
+  margin-top: 10px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* TECH LIST */
+.tech-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* TECH CARD */
+.tech-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: 0.3s;
+}
+
+.tech-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tech-card h3 {
+  margin: 0;
+}
+
+.tech-desc {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* SELECT */
+select {
+  background: #020617;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+select:hover {
+  background: #1e293b;
+}
+
+/* BUTTONS */
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 25px;
+}
+
+.generate-btn {
+  background: linear-gradient(135deg, #3b82f6, #9333ea);
+  color: white;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: 0.3s;
+}
+
+.generate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+}
+
+.back-btn {
+  background: rgba(255,255,255,0.08);
+  color: white;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.back-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+/* ICONS */
+.btn-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  transition: 0.2s;
+}
+
+.generate-btn:hover .btn-icon {
+  transform: rotate(10deg) scale(1.1);
+}
+
+.back-btn:hover .btn-icon {
+  transform: translateX(-4px);
+}
+
+/* Spinner pour le bouton */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.6s linear infinite;
+}
+
+/* Large spinner pour l'overlay */
+.spinner-large {
+  display: inline-block;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 20px;
+  border: 3px solid rgba(99, 102, 241, 0.2);
+  border-radius: 50%;
+  border-top-color: #6366f1;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Bouton désactivé */
+.generate-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.back-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Message d'erreur */
+.error-message {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  color: #f87171;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.loading-message {
+  text-align: center;
+  color: white;
+  padding: 32px;
+  background: rgba(30, 41, 59, 0.95);
+  border-radius: 24px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  max-width: 400px;
+  animation: slideUp 0.3s ease;
+}
+
+.loading-message h3 {
+  font-size: 20px;
+  margin: 16px 0 8px 0;
+  color: #60a5fa;
+}
+
+.loading-message p {
+  font-size: 14px;
+  color: #cbd5e1;
+  margin: 8px 0;
+}
+
+.loading-message .small-text {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 16px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Indicateur de progression sur les selects désactivés */
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Amélioration du tech-card pendant le chargement */
+.tech-card {
+  transition: opacity 0.3s ease;
+}
+
+.tech-card.disabled {
+  opacity: 0.6;
+}

@@ -1,0 +1,147 @@
+/* BACKGROUND */
+.learning-container {
+  min-height: 100vh;
+  padding: 40px;
+  background: radial-gradient(circle at top, #1e293b, #020617);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* CARD */
+.learning-card {
+  width: 100%;
+  max-width: 1000px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  padding: 30px;
+  color: white;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+/* HEADER */
+.header {
+  margin-bottom: 25px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.project {
+  color: #94a3b8;
+}
+
+.project span {
+  color: #60a5fa;
+  font-weight: bold;
+}
+
+/* CONTENT */
+.learning-content {
+  line-height: 1.6;
+}
+
+/* Markdown styling */
+.learning-content h2 {
+  margin-top: 25px;
+  color: #93c5fd;
+}
+
+.learning-content h3 {
+  margin-top: 20px;
+  color: #c4b5fd;
+}
+
+.learning-content p {
+  color: #e2e8f0;
+}
+
+/* CODE BLOCK */
+.learning-content pre {
+  background: #020617;
+  padding: 15px;
+  border-radius: 12px;
+  overflow-x: auto;
+  margin-top: 15px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.learning-content code {
+  color: #38bdf8;
+}
+
+/* LIST */
+.learning-content ul {
+  padding-left: 20px;
+}
+
+.learning-content li {
+  margin-bottom: 6px;
+}
+
+/* LINKS */
+.learning-content a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.learning-content a:hover {
+  text-decoration: underline;
+}
+
+/* ACTIONS */
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+}
+
+/* BUTTONS */
+button {
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* SKIP */
+.skip-btn {
+  background: rgba(255,255,255,0.08);
+  color: white;
+}
+
+.skip-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+/* START */
+.start-btn {
+  background: linear-gradient(135deg, #3b82f6, #9333ea);
+  color: white;
+  transition: 0.3s;
+}
+
+.start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+}
+
+/* scope pour éviter conflits */
+.learning-container button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* icônes */
+.learning-container .btn-icon {
+  width: 18px;
+  height: 18px;
+}
+

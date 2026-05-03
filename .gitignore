@@ -1,0 +1,37 @@
+# Dossiers Python (CRUCIAL: __pycache__)
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.pytest_cache/
+
+# Dossiers du projet à ignorer
+db/
+knowledge_base/
+uploads/
+logs/
+temp/
+
+# Fichiers d'environnement
+.env
+.env.*
+.flaskenv
+
+# Base de données
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+
+# Fichiers temporaires
+*.tmp
+*.bak
+*.swp

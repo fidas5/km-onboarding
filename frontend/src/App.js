@@ -1,0 +1,452 @@
+import { useState, useEffect } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+  Navigate
+} from "react-router-dom";
+
+import ProjectSelector from "./Components/ProjectSelector";
+import Chat from "./Components/Chat";
+import Login from "./Components/Login";
+import ProfileForm from "./Components/ProfileForm";
+import LearningPage from "./Components/LearningPage";
+import ModulesInteractifs from "./Components/ModulesInteractifs";
+import ResetPassword from "./Components/ResetPassword";
+import LearningPlan from "./Components/LearningPlan";
+
+// Protected Route wrapper
+function ProtectedRoute({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
+  }, []);
+
+  if (loading) return <div style={styles.loading}>Chargement...</div>;
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+}
+
+// Projects Page
+function ProjectsPage() {
+  const navigate = useNavigate();
+
+  const handleSelectProject = (proj) => {
+    if (proj.action === "learn") {
+      // Nouveau plan d'apprentissage
+      navigate("/profile", { state: { project: proj } });
+    } else if (proj.action === "continue_learning") {
+      // Reprendre un plan existant
+      navigate("/learning-plan", { 
+        state: { 
+          project: proj,
+          learningPlan: proj.learningData?.learningPlan,
+          pathId: proj.learningData?.pathId,
+          savedProgress: proj.learningData?.completedSteps,
+          savedStatus: proj.learningData?.status
+        } 
+      });
+    } else {
+      // Chat
+      navigate("/chat", { state: { project: proj } });
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
+  return (
+    <ProjectSelector
+      setProject={handleSelectProject}
+      logout={logout}
+    />
+  );
+}
+
+// Profile Page
+function ProfilePage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [user, setUser] = useState(null);
+  const project = location.state?.project;
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    
+    if (!project) {
+      navigate("/projects");
+    }
+  }, [project, navigate]);
+
+  const handleNext = (learningPlan, pathId) => {
+    // Naviguer vers la page du plan interactif
+    navigate("/learning-plan", { 
+      state: { 
+        project, 
+        learningPlan,
+        
+        pathId,
+        isNewPlan: true 
+      } 
+    });
+  };
+
+  const handleBack = () => {
+    navigate("/projects");
+  };
+
+  if (!project || !user) return null;
+
+  return (
+    <ProfileForm
+      project={project}
+      user={user}
+      onNext={handleNext}
+      onBack={handleBack}
+    />
+  );
+}
+
+// Learning Plan Page (Composant interactif avec reprise)
+function LearningPlanPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [learningData, setLearningData] = useState(null);
+  
+  const { project, learningPlan, pathId, savedProgress, savedStatus, isNewPlan } = location.state || {};
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    
+    if (!project) {
+      navigate("/projects");
+      return;
+    }
+    
+    // Si ce n'est pas un nouveau plan, charger les données sauvegardées
+    if (!isNewPlan && !learningPlan) {
+      loadSavedLearningPlan();
+    } else {
+      setLearningData({ learningPlan, pathId, savedProgress, savedStatus });
+      setLoading(false);
+    }
+  }, [project, learningPlan, isNewPlan, navigate]);
+
+  const loadSavedLearningPlan = async () => {
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/get-learning-progress/${user?.user_id}/${project.name}`);
+      const data = await response.json();
+      
+      if (data.exists) {
+        setLearningData({
+          learningPlan: data.learning_path,
+          pathId: data.path_id,
+          savedProgress: data.completed_steps ? JSON.parse(data.completed_steps) : [],
+          savedStatus: data.status,
+          progressPercentage: data.progress_percentage
+        });
+      } else {
+        // Aucun plan trouvé, retourner aux projets
+        navigate("/projects");
+      }
+    } catch (error) {
+      console.error("Error loading learning plan:", error);
+      navigate("/projects");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleComplete = async () => {
+    try {
+      await fetch("http://127.0.0.1:5000/update-learning-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user?.user_id,
+          project: project.name,
+          status: "completed"
+        })
+      });
+    } catch (error) {
+      console.error("Erreur sauvegarde:", error);
+    }
+    
+   
+  };
+
+  const handleContinueToChat = () => {
+    navigate("/chat", { state: { project } });
+  };
+
+  if (loading) {
+    return (
+      <div style={styles.loading}>
+        <div className="spinner-large"></div>
+        <p>Chargement de votre plan d'apprentissage...</p>
+      </div>
+    );
+  }
+
+  if (!learningData || !learningData.learningPlan || !user) {
+    return (
+      <div style={styles.loading}>
+        <p>Aucun plan d'apprentissage trouvé</p>
+        <button onClick={() => navigate("/projects")}>Retour aux projets</button>
+      </div>
+    );
+  }
+
+  return (
+    <LearningPlan
+      learningPlan={learningData.learningPlan}
+      project={project.name}
+      userId={user.user_id}
+      pathId={learningData.pathId}
+      initialCompletedSteps={learningData.savedProgress}
+      initialStatus={learningData.savedStatus}
+      onComplete={handleComplete}
+      onContinue={handleContinueToChat}
+    />
+  );
+}
+
+// Learning Page (ancien, gardé pour compatibilité)
+function LearningPageRoute() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [user, setUser] = useState(null);
+  const { project, learningPath } = location.state || {};
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    
+    if (!project || !learningPath) {
+      navigate("/projects");
+    }
+  }, [project, learningPath, navigate]);
+
+  const handleContinue = () => {
+    navigate("/chat", { state: { project } });
+  };
+
+  const handleSkip = () => {
+    navigate("/chat", { state: { project } });
+  };
+
+  if (!project || !learningPath || !user) return null;
+
+  return (
+    <LearningPage
+      path={learningPath}
+      user={user}
+      project={project}
+      onSkip={handleSkip}
+      onContinue={handleContinue}
+    />
+  );
+}
+
+// Chat Page
+function ChatPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [user, setUser] = useState(null);
+  const [project, setProject] = useState(location.state?.project);
+  const [conversations, setConversations] = useState([]);
+  const [currentChatId, setCurrentChatId] = useState(null);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    
+    if (!project) {
+      navigate("/projects");
+      return;
+    }
+  }, [project, navigate]);
+
+  useEffect(() => {
+    if (!project || !user) return;
+
+    fetch(`http://127.0.0.1:5000/chats/${project.name}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const formatted = data.map((chat) => ({
+          id: chat.id,
+          title: chat.title || "New Chat",
+          pinned: Boolean(chat.pinned),
+          messages: chat.messages || []
+        }));
+
+        setConversations(formatted);
+        setCurrentChatId(
+          formatted.length > 0 ? formatted[0].id : null
+        );
+      })
+      .catch(error => console.error("Error loading chats:", error));
+  }, [project, user]);
+
+  const handleNewChat = () => {
+    setCurrentChatId(null);
+  };
+
+  const addMessage = async (chatId, message) => {
+    setConversations((prev) =>
+      prev.map((chat) => {
+        if (chat.id !== chatId) return chat;
+        return {
+          ...chat,
+          messages: [...chat.messages, message]
+        };
+      })
+    );
+
+    await fetch("http://127.0.0.1:5000/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        role: message.role,
+        content: message.content
+      })
+    });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
+  const handleBackToProjects = () => {
+    navigate("/projects");
+  };
+
+  if (!project || !user) return null;
+
+  return (
+    <Chat
+      project={project.name}
+      setProject={handleBackToProjects}
+      conversations={conversations}
+      setConversations={setConversations}
+      currentChatId={currentChatId}
+      setCurrentChatId={setCurrentChatId}
+      handleNewChat={handleNewChat}
+      addMessage={addMessage}
+      logout={handleLogout}
+    />
+  );
+}
+
+// Login Page
+function LoginPage() {
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      navigate("/projects");
+    }
+  }, [navigate]);
+
+  const handleSetUser = (user) => {
+    localStorage.setItem("user", JSON.stringify(user));
+    navigate("/projects");
+  };
+
+  return <Login setUser={handleSetUser} />;
+}
+
+// Reset Password Page
+function ResetPasswordPage() {
+  // Component logic here
+  return <ResetPassword />;
+}
+
+// Styles
+const styles = {
+  loading: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    fontSize: '1.2rem',
+    color: '#60a5fa',
+    background: '#0f172a',
+    gap: '1rem'
+  }
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/modules" element={<ModulesInteractifs />} />
+        
+        {/* Protected routes */}
+        <Route path="/" element={<Navigate to="/projects" replace />} />
+        <Route path="/projects" element={
+          <ProtectedRoute>
+            <ProjectsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/learning-plan" element={
+          <ProtectedRoute>
+            <LearningPlanPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/learning" element={
+          <ProtectedRoute>
+            <LearningPageRoute />
+          </ProtectedRoute>
+        } />
+        <Route path="/chat" element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        } />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
