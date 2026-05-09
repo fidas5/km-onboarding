@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import "./ProjectSelector.css";
 import AddProjectModal from "./AddProjectModal";
-
+import { FiLogOut } from "react-icons/fi";
 function ProjectSelector({ setProject, logout }) {
   const [projects, setProjects] = useState({});
   const [showForm, setShowForm] = useState(false);
   const [learningStatus, setLearningStatus] = useState({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // Pour la confirmation
 
   // 👤 Read user from localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -25,6 +26,39 @@ function ProjectSelector({ setProject, logout }) {
       .then((res) => res.json())
       .then((data) => setProjects(data))
       .catch((err) => console.error(err));
+  };
+
+  // Supprimer un projet
+  const deleteProject = async (projectName) => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/delete_project", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          project_name: projectName,
+          confirm: true
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Rafraîchir la liste des projets
+        loadProjects();
+        // Afficher un message de succès (optionnel)
+        console.log(`Projet "${projectName}" supprimé avec succès`);
+        // Fermer la confirmation
+        setShowDeleteConfirm(null);
+      } else {
+        console.error("Erreur:", data.error);
+        alert(`Erreur: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+      alert("Erreur lors de la suppression du projet");
+    }
   };
 
   // Vérifier pour chaque projet s'il a un plan d'apprentissage
@@ -127,13 +161,9 @@ function ProjectSelector({ setProject, logout }) {
             <span className="user-name">{userName}</span>
             <span className="user-role">Développeur</span>
           </div>
-          <button className="logout-btn" onClick={logout} title="Se déconnecter">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-          </button>
+<button className="logout-btn" onClick={logout} title="Se déconnecter">
+  <FiLogOut size={18} />
+</button>
         </div>
       </div>
 
@@ -163,7 +193,13 @@ function ProjectSelector({ setProject, logout }) {
               >
                 <div className="card-header">
                   <h2>{name}</h2>
-                  
+                  <button
+                    className="delete-project-btn"
+                    onClick={() => setShowDeleteConfirm(name)}
+                    title="Supprimer le projet"
+                  >
+                    🗑️
+                  </button>
                 </div>
 
                 <p className="desc">{data?.description}</p>
@@ -213,13 +249,40 @@ function ProjectSelector({ setProject, logout }) {
         </div>
       </div>
 
-      {/* Popup */}
+      {/* Popup pour ajouter un projet */}
       {showForm && (
         <div className="modal-overlay">
           <AddProjectModal
             close={() => setShowForm(false)}
             refreshProjects={loadProjects}
           />
+        </div>
+      )}
+
+      {/* Popup de confirmation de suppression */}
+      {showDeleteConfirm && (
+        <div className="modal-overlay">
+          <div className="delete-confirm-modal">
+            <h3>Confirmer la suppression</h3>
+            <p>
+              Êtes-vous sûr de vouloir supprimer le projet <strong>"{showDeleteConfirm}"</strong> ?
+            </p>
+           
+            <div className="delete-modal-buttons">
+              <button
+                className="cancel-delete-btn"
+                onClick={() => setShowDeleteConfirm(null)}
+              >
+                Annuler
+              </button>
+              <button
+                className="confirm-delete-btn"
+                onClick={() => deleteProject(showDeleteConfirm)}
+              >
+                Oui, supprimer
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -7,17 +7,33 @@ import {
   useLocation,
   Navigate
 } from "react-router-dom";
+import { FiLoader } from "react-icons/fi";
 
 import ProjectSelector from "./Components/ProjectSelector";
 import Chat from "./Components/Chat";
 import Login from "./Components/Login";
+import Register from "./Components/Register";
 import ProfileForm from "./Components/ProfileForm";
 import LearningPage from "./Components/LearningPage";
 import ModulesInteractifs from "./Components/ModulesInteractifs";
 import ResetPassword from "./Components/ResetPassword";
 import LearningPlan from "./Components/LearningPlan";
+import AdminDashboard from "./Components/AdminDashboard";
 
-// Protected Route wrapper
+const styles = {
+  loading: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    fontSize: '1.2rem',
+    color: '#60a5fa',
+    background: '#0f172a',
+    gap: '1rem'
+  }
+};
+
 function ProtectedRoute({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,10 +46,35 @@ function ProtectedRoute({ children }) {
     setLoading(false);
   }, []);
 
-  if (loading) return <div style={styles.loading}>Chargement...</div>;
+  if (loading) return <div style={styles.loading}><FiLoader size={40} className="spin" /><p>Chargement...</p></div>;
   
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+}
+
+function AdminRoute({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
+  }, []);
+
+  if (loading) return <div style={styles.loading}><FiLoader size={40} className="spin" /><p>Chargement...</p></div>;
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (user.role !== "admin") {
+    return <Navigate to="/projects" replace />;
   }
   
   return children;
@@ -45,10 +86,8 @@ function ProjectsPage() {
 
   const handleSelectProject = (proj) => {
     if (proj.action === "learn") {
-      // Nouveau plan d'apprentissage
       navigate("/profile", { state: { project: proj } });
     } else if (proj.action === "continue_learning") {
-      // Reprendre un plan existant
       navigate("/learning-plan", { 
         state: { 
           project: proj,
@@ -59,13 +98,13 @@ function ProjectsPage() {
         } 
       });
     } else {
-      // Chat
       navigate("/chat", { state: { project: proj } });
     }
   };
 
   const logout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
@@ -96,12 +135,10 @@ function ProfilePage() {
   }, [project, navigate]);
 
   const handleNext = (learningPlan, pathId) => {
-    // Naviguer vers la page du plan interactif
     navigate("/learning-plan", { 
       state: { 
         project, 
         learningPlan,
-        
         pathId,
         isNewPlan: true 
       } 
@@ -124,7 +161,7 @@ function ProfilePage() {
   );
 }
 
-// Learning Plan Page (Composant interactif avec reprise)
+// Learning Plan Page
 function LearningPlanPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -133,26 +170,6 @@ function LearningPlanPage() {
   const [learningData, setLearningData] = useState(null);
   
   const { project, learningPlan, pathId, savedProgress, savedStatus, isNewPlan } = location.state || {};
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    
-    if (!project) {
-      navigate("/projects");
-      return;
-    }
-    
-    // Si ce n'est pas un nouveau plan, charger les données sauvegardées
-    if (!isNewPlan && !learningPlan) {
-      loadSavedLearningPlan();
-    } else {
-      setLearningData({ learningPlan, pathId, savedProgress, savedStatus });
-      setLoading(false);
-    }
-  }, [project, learningPlan, isNewPlan, navigate]);
 
   const loadSavedLearningPlan = async () => {
     try {
@@ -168,7 +185,6 @@ function LearningPlanPage() {
           progressPercentage: data.progress_percentage
         });
       } else {
-        // Aucun plan trouvé, retourner aux projets
         navigate("/projects");
       }
     } catch (error) {
@@ -178,6 +194,27 @@ function LearningPlanPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    
+    if (!project) {
+      navigate("/projects");
+      return;
+    }
+    
+    if (!isNewPlan && !learningPlan) {
+      if (user?.user_id) {
+        loadSavedLearningPlan();
+      }
+    } else {
+      setLearningData({ learningPlan, pathId, savedProgress, savedStatus });
+      setLoading(false);
+    }
+  }, [project, learningPlan, isNewPlan, navigate, user?.user_id]);
 
   const handleComplete = async () => {
     try {
@@ -193,8 +230,6 @@ function LearningPlanPage() {
     } catch (error) {
       console.error("Erreur sauvegarde:", error);
     }
-    
-   
   };
 
   const handleContinueToChat = () => {
@@ -204,7 +239,7 @@ function LearningPlanPage() {
   if (loading) {
     return (
       <div style={styles.loading}>
-        <div className="spinner-large"></div>
+        <FiLoader size={40} className="spin" />
         <p>Chargement de votre plan d'apprentissage...</p>
       </div>
     );
@@ -233,7 +268,7 @@ function LearningPlanPage() {
   );
 }
 
-// Learning Page (ancien, gardé pour compatibilité)
+// Learning Page
 function LearningPageRoute() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -277,9 +312,10 @@ function ChatPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
-  const [project, setProject] = useState(location.state?.project);
   const [conversations, setConversations] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
+  
+  const project = location.state?.project;
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -307,9 +343,7 @@ function ChatPage() {
         }));
 
         setConversations(formatted);
-        setCurrentChatId(
-          formatted.length > 0 ? formatted[0].id : null
-        );
+        setCurrentChatId(formatted.length > 0 ? formatted[0].id : null);
       })
       .catch(error => console.error("Error loading chats:", error));
   }, [project, user]);
@@ -331,9 +365,7 @@ function ChatPage() {
 
     await fetch("http://127.0.0.1:5000/messages", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
         role: message.role,
@@ -344,6 +376,7 @@ function ChatPage() {
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
@@ -375,49 +408,40 @@ function LoginPage() {
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
-      navigate("/projects");
+      const user = JSON.parse(savedUser);
+      if (user.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/projects");
+      }
     }
   }, [navigate]);
 
   const handleSetUser = (user) => {
     localStorage.setItem("user", JSON.stringify(user));
-    navigate("/projects");
+    if (user.role === "admin") {
+      navigate("/admin");
+    } else {
+      navigate("/projects");
+    }
   };
 
   return <Login setUser={handleSetUser} />;
 }
 
-// Reset Password Page
 function ResetPasswordPage() {
-  // Component logic here
   return <ResetPassword />;
 }
-
-// Styles
-const styles = {
-  loading: {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh',
-    fontSize: '1.2rem',
-    color: '#60a5fa',
-    background: '#0f172a',
-    gap: '1rem'
-  }
-};
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/modules" element={<ModulesInteractifs />} />
         
-        {/* Protected routes */}
         <Route path="/" element={<Navigate to="/projects" replace />} />
         <Route path="/projects" element={
           <ProtectedRoute>
@@ -443,6 +467,12 @@ function App() {
           <ProtectedRoute>
             <ChatPage />
           </ProtectedRoute>
+        } />
+        
+        <Route path="/admin" element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
         } />
       </Routes>
     </BrowserRouter>

@@ -33,6 +33,23 @@ mail = Mail(app)
 
 serializer = URLSafeTimedSerializer("SECRET_KEY")
 
+# ============================================
+# MODIFICATION: Fonction pour créer une nouvelle connexion
+# ============================================
+def get_db_connection():
+    """Crée une nouvelle connexion MySQL pour chaque requête"""
+    return mysql.connector.connect(
+        host=os.getenv('DB_HOST'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        database=os.getenv('DB_NAME'),
+        port=int(os.getenv('DB_PORT'))
+    )
+
+# ============================================
+# ATTENTION: Gardez ces connexions globales pour les routes existantes
+# mais on va les réinitialiser en cas de problème
+# ============================================
 database = mysql.connector.connect(
     host=os.getenv('DB_HOST'),
     user=os.getenv('DB_USER'),
@@ -41,6 +58,7 @@ database = mysql.connector.connect(
     port=int(os.getenv('DB_PORT'))
 )
 cursor = database.cursor(dictionary=True)
+
 import sys
 import os
 
@@ -129,6 +147,65 @@ def get_projects():
     return jsonify(projects)
 
 
+@app.route("/delete_project", methods=["DELETE"])
+def delete_project():
+    data = request.json
+    project_name = data.get("project_name")
+    
+    if not project_name:
+        return jsonify({"error": "Project name is required"}), 400
+    
+    try:
+        # 1. Supprimer de ChromaDB
+        docs = db.get()
+        
+        ids_to_delete = []
+        for i, meta in enumerate(docs["metadatas"]):
+            if meta and meta.get("project") == project_name:
+                ids_to_delete.append(docs["ids"][i])
+        
+        if ids_to_delete:
+            db.delete(ids=ids_to_delete)
+            print(f"✅ Supprimé {len(ids_to_delete)} vecteurs pour '{project_name}'")
+        
+        # 2. Nettoyer MySQL
+        cursor = database.cursor()
+        
+        # Supprimer les messages
+        cursor.execute("""
+            DELETE m FROM messages m
+            INNER JOIN chats c ON m.chat_id = c.id
+            WHERE c.project = %s
+        """, (project_name,))
+        
+        # Supprimer les chats
+        cursor.execute("DELETE FROM chats WHERE project = %s", (project_name,))
+        
+        # Supprimer les learning paths
+        cursor.execute("DELETE FROM learning_paths WHERE project = %s", (project_name,))
+        
+        database.commit()
+        
+        # 3. Optionnel : Supprimer le dossier physique du projet
+        import shutil
+        knowledge_base_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "knowledge_base", project_name)
+        if os.path.exists(knowledge_base_path):
+            shutil.rmtree(knowledge_base_path)
+            print(f"✅ Dossier supprimé: {knowledge_base_path}")
+        
+        return jsonify({
+            "message": f"Project '{project_name}' deleted successfully",
+            "vectors_deleted": len(ids_to_delete)
+        }), 200
+        
+    except Exception as e:
+        database.rollback()
+        print(f"Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/chats/<project>", methods=["GET"])
 def get_chats(project):
     cursor.execute("SELECT * FROM chats WHERE project=%s", (project,))
@@ -186,8 +263,8 @@ def delete_chat(id):
 
     return jsonify({"status": "deleted"})
 
-@app.route("/register", methods=["POST"])
-def register():
+@app.route("/registerOLD", methods=["POST"])
+def registerOLD():
     data = request.json
 
     hashed_password = generate_password_hash(data["password"])
@@ -205,8 +282,8 @@ def register():
         return jsonify({"error": "Email already exists"}), 400
     
 
-@app.route("/login", methods=["POST"])
-def login():
+@app.route("/loginOLD", methods=["POST"])
+def loginOLD():
     data = request.json
 
     cursor.execute("SELECT * FROM users WHERE email=%s", (data["email"],))
@@ -712,6 +789,517 @@ def add_project():
         return jsonify({"error": f"Ingestion failed: {str(e)}"}), 500
 
 
+
+# ============================================
+# ADMIN ROLE 
+# ============================================
+
+# ============================================
+# IMPORTS SUPPLEMENTAIRES (à ajouter en haut)
+# ============================================
+import secrets
+from datetime import datetime, timedelta
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import smtplib
+import re
+
+# ============================================
+# ADMIN DECORATOR (CORRIGÉ)
+# ============================================
+
+def admin_required(f):
+    """Decorator pour les routes admin uniquement - avec nouvelle connexion"""
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"error": "Token manquant"}), 401
         
+        token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+        
+        # Créer une nouvelle connexion pour la vérification admin
+        conn = get_db_connection()
+        cursor_admin = conn.cursor(dictionary=True)
+        
+        try:
+            cursor_admin.execute("""
+                SELECT u.*, r.name as role_name 
+                FROM users u
+                JOIN roles r ON u.role_id = r.id
+                WHERE u.auth_token = %s AND u.is_active = 1
+            """, (token,))
+            user = cursor_admin.fetchone()
+            
+            if not user or user['role_name'] != 'admin':
+                return jsonify({"error": "Accès non autorisé - Admin requis"}), 403
+            
+            request.admin_user = user
+            return f(*args, **kwargs)
+        finally:
+            cursor_admin.close()
+            conn.close()
+    
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+# ============================================
+# FONCTION D'ENVOI D'EMAIL
+# ============================================
+
+def send_invitation_email(to_email, register_link, admin_name):
+    """Envoie l'email d'invitation"""
+    msg = MIMEMultipart()
+    msg['From'] = app.config["MAIL_USERNAME"]
+    msg['To'] = to_email
+    msg['Subject'] = "Invitation à rejoindre AI-Onboarding"
+    
+    html_content = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #6366f1, #3b82f6); padding: 20px; text-align: center; color: white; border-radius: 10px 10px 0 0; }}
+            .content {{ padding: 20px; background: #f8fafc; }}
+            .button {{ background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; }}
+            .footer {{ text-align: center; padding: 15px; font-size: 12px; color: #666; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>AI-Onboarding</h2>
+            </div>
+            <div class="content">
+                <p>Bonjour,</p>
+                <p><strong>{admin_name}</strong> vous a invité à rejoindre la plateforme AI-Onboarding.</p>
+                <p>Cliquez sur le lien ci-dessous pour créer votre compte :</p>
+                <p style="margin: 25px 0;">
+                    <a href="{register_link}" class="button">Créer mon compte</a>
+                </p>
+                <p>Ce lien expire dans 7 jours.</p>
+                <hr>
+                <p style="font-size: 12px;">Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+            </div>
+            <div class="footer">
+                &copy; 2024 AI-Onboarding - Plateforme d'onboarding intelligent
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    msg.attach(MIMEText(html_content, 'html'))
+    
+    try:
+        with smtplib.SMTP(app.config["MAIL_SERVER"], app.config["MAIL_PORT"]) as server:
+            server.starttls()
+            server.login(app.config["MAIL_USERNAME"], app.config["MAIL_PASSWORD"])
+            server.send_message(msg)
+        print(f"✅ Email envoyé à {to_email}")
+    except Exception as e:
+        print(f"❌ Erreur envoi email: {e}")
+
+# ============================================
+# LOGIN MODIFIÉ
+# ============================================
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.json
+    
+    cursor = database.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT u.*, r.name as role_name 
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        WHERE u.email = %s AND u.is_active = 1
+    """, (data['email'],))
+    
+    user = cursor.fetchone()
+    
+    if not user or not check_password_hash(user['password'], data['password']):
+        return jsonify({"error": "Email ou mot de passe incorrect"}), 401
+    
+    # Générer token de session
+    auth_token = secrets.token_urlsafe(32)
+    cursor.execute("UPDATE users SET auth_token = %s WHERE id = %s", (auth_token, user['id']))
+    database.commit()
+    
+    return jsonify({
+        "user": {
+            "id": user['id'],
+            "name": user['name'],
+            "email": user['email'],
+            "role": user['role_name']
+        },
+        "token": auth_token,
+        "role": user['role_name']
+    })
+
+# ============================================
+# REGISTER AVEC TOKEN INVITATION
+# ============================================
+
+@app.route("/register", methods=["POST"])
+def register():
+    """Inscription UNIQUEMENT par invitation (avec token)"""
+    data = request.json
+    
+    print("📝 Données reçues:", data)
+    
+    name = data.get("name")
+    email = data.get("email")
+    password = data.get("password")
+    token = data.get("token")
+    
+    # Validation des champs obligatoires
+    if not name or not email or not password or not token:
+        return jsonify({"error": "Tous les champs sont requis"}), 400
+    
+    cursor = database.cursor(dictionary=True)
+    
+    # Vérifier le token d'invitation
+    cursor.execute("""
+        SELECT * FROM users 
+        WHERE invitation_token = %s 
+        AND is_active = 0 
+        AND invitation_expires > NOW()
+    """, (token,))
+    
+    invited_user = cursor.fetchone()
+    if not invited_user:
+        return jsonify({"error": "Lien d'invitation invalide ou expiré"}), 400
+    
+    # Vérifier que l'email correspond à l'invitation
+    if invited_user['email'] != email:
+        return jsonify({"error": "L'email ne correspond pas à l'invitation"}), 400
+    
+    # Mettre à jour l'utilisateur invité avec son nom et mot de passe
+    hashed_password = generate_password_hash(password)
+    cursor.execute("""
+        UPDATE users 
+        SET name = %s, 
+            password = %s, 
+            is_active = 1,
+            invitation_token = NULL,
+            invitation_expires = NULL
+        WHERE id = %s
+    """, (name, hashed_password, invited_user['id']))
+    
+    database.commit()
+    
+    return jsonify({
+        "message": "Compte activé avec succès",
+        "user": {
+            "id": invited_user['id'],
+            "name": name,
+            "email": email,
+            "role": "developer"
+        }
+    }), 201
+
+# ============================================
+# ADMIN - INVITER UN EMPLOYÉ (CORRIGÉ)
+# ============================================
+
+@app.route("/admin/invite", methods=["POST"])
+@admin_required
+def invite_employee():
+    """Invite un employé par email - seulement l'email, pas de name/password"""
+    data = request.json
+    email = data.get("email")
+    
+    if not email:
+        return jsonify({"error": "Email requis"}), 400
+    
+    # Créer une nouvelle connexion pour cette requête
+    conn = get_db_connection()
+    cursor_invite = conn.cursor(dictionary=True)
+    
+    try:
+        # Vérifier si l'email existe déjà
+        cursor_invite.execute("SELECT id, is_active FROM users WHERE email = %s", (email,))
+        existing = cursor_invite.fetchone()
+        
+        if existing:
+            if existing['is_active']:
+                return jsonify({"error": "Cet email est déjà utilisé par un compte actif"}), 400
+            else:
+                return jsonify({"error": "Une invitation est déjà en attente pour cet email"}), 400
+        
+        # Générer un token unique
+        invitation_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now() + timedelta(days=7)
+        
+        # Créer un utilisateur INACTIF
+        cursor_invite.execute("""
+            INSERT INTO users (email, role_id, is_active, invited_by, invitation_token, invitation_expires)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (email, 2, 0, request.admin_user['id'], invitation_token, expires_at))
+        
+        conn.commit()
+        
+        # Envoyer l'email d'invitation
+        register_link = f"http://localhost:3000/register?token={invitation_token}"
+        
+        try:
+            send_invitation_email(email, register_link, request.admin_user['name'])
+        except Exception as e:
+            print(f"Erreur envoi email: {e}")
+        
+        return jsonify({
+            "message": f"Invitation envoyée à {email}",
+            "expires_at": expires_at.isoformat()
+        })
+    finally:
+        cursor_invite.close()
+        conn.close()
+
+# ============================================
+# ADMIN - LISTE DES EMPLOYÉS (CORRIGÉ)
+# ============================================
+
+@app.route("/admin/employees", methods=["GET"])
+@admin_required
+def get_employees():
+    """Récupère la liste de tous les employés"""
+    conn = get_db_connection()
+    cursor_emp = conn.cursor(dictionary=True)
+    
+    try:
+        cursor_emp.execute("""
+            SELECT u.id, u.name, u.email, u.is_active, u.created_at,
+                   r.name as role, inv.name as invited_by_name
+            FROM users u
+            JOIN roles r ON u.role_id = r.id
+            LEFT JOIN users inv ON u.invited_by = inv.id
+            WHERE r.name = 'developer'
+            ORDER BY u.created_at DESC
+        """)
+        
+        employees = cursor_emp.fetchall()
+        
+        # Formater les dates
+        for emp in employees:
+            if emp['created_at']:
+                emp['created_at'] = emp['created_at'].isoformat()
+        
+        return jsonify(employees)
+    finally:
+        cursor_emp.close()
+        conn.close()
+
+# ============================================
+# ADMIN - STATISTIQUES (CORRIGÉ)
+# ============================================
+
+@app.route("/admin/stats", methods=["GET"])
+@admin_required
+def get_admin_stats():
+    """Statistiques pour l'admin"""
+    conn = get_db_connection()
+    cursor_stats = conn.cursor(dictionary=True)
+    
+    try:
+        # Nombre d'employés actifs
+        cursor_stats.execute("""
+            SELECT COUNT(*) as count FROM users u
+            JOIN roles r ON u.role_id = r.id
+            WHERE r.name = 'developer' AND u.is_active = 1
+        """)
+        active_employees = cursor_stats.fetchone()['count'] or 0
+        
+        # Nombre d'invitations en attente
+        cursor_stats.execute("""
+            SELECT COUNT(*) as count FROM users 
+            WHERE is_active = 0 AND invitation_token IS NOT NULL AND invitation_expires > NOW()
+        """)
+        pending_invitations = cursor_stats.fetchone()['count'] or 0
+        
+        # Nombre de projets
+        cursor_stats.execute("SELECT COUNT(*) as count FROM projects")
+        projects_count = cursor_stats.fetchone()['count'] or 0
+        
+        # Nombre de chats
+        cursor_stats.execute("SELECT COUNT(*) as count FROM chats")
+        chats_count = cursor_stats.fetchone()['count'] or 0
+        
+        # Nombre total d'utilisateurs
+        cursor_stats.execute("SELECT COUNT(*) as count FROM users")
+        total_users = cursor_stats.fetchone()['count'] or 0
+        
+        return jsonify({
+            "active_employees": active_employees,
+            "pending_invitations": pending_invitations,
+            "projects_count": projects_count,
+            "chats_count": chats_count,
+            "total_users": total_users
+        })
+    finally:
+        cursor_stats.close()
+        conn.close()
+
+# ============================================
+# ADMIN - LISTE DES INVITATIONS EN ATTENTE (CORRIGÉ)
+# ============================================
+
+@app.route("/admin/pending-invitations", methods=["GET"])
+@admin_required
+def get_pending_invitations():
+    """Récupère les invitations en attente"""
+    conn = get_db_connection()
+    cursor_pending = conn.cursor(dictionary=True)
+    
+    try:
+        cursor_pending.execute("""
+            SELECT u.id, u.email, u.invitation_token, u.invitation_expires, 
+                   u.created_at, inv.name as invited_by_name
+            FROM users u
+            LEFT JOIN users inv ON u.invited_by = inv.id
+            WHERE u.is_active = 0 AND u.invitation_token IS NOT NULL AND u.invitation_expires > NOW()
+            ORDER BY u.created_at DESC
+        """)
+        
+        invitations = cursor_pending.fetchall()
+        
+        for inv in invitations:
+            inv['created_at'] = inv['created_at'].isoformat() if inv['created_at'] else None
+            inv['invitation_expires'] = inv['invitation_expires'].isoformat() if inv['invitation_expires'] else None
+        
+        return jsonify(invitations)
+    finally:
+        cursor_pending.close()
+        conn.close()
+
+# ============================================
+# ADMIN - MODIFIER UN EMPLOYÉ
+# ============================================
+
+@app.route("/admin/employees/<int:employee_id>", methods=["PUT"])
+@admin_required
+def update_employee(employee_id):
+    """Modifie les informations d'un employé"""
+    data = request.json
+    
+    cursor = database.cursor(dictionary=True)
+    
+    # Vérifier que l'utilisateur est un employé
+    cursor.execute("""
+        SELECT u.*, r.name as role_name 
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        WHERE u.id = %s AND r.name = 'developer'
+    """, (employee_id,))
+    
+    employee = cursor.fetchone()
+    if not employee:
+        return jsonify({"error": "Employé non trouvé"}), 404
+    
+    updates = []
+    values = []
+    
+    if 'name' in data:
+        updates.append("name = %s")
+        values.append(data['name'])
+    
+    if 'email' in data:
+        # Vérifier si l'email n'est pas déjà utilisé
+        cursor.execute("SELECT id FROM users WHERE email = %s AND id != %s", (data['email'], employee_id))
+        if cursor.fetchone():
+            return jsonify({"error": "Cet email est déjà utilisé"}), 400
+        updates.append("email = %s")
+        values.append(data['email'])
+    
+    if updates:
+        query = f"UPDATE users SET {', '.join(updates)} WHERE id = %s"
+        values.append(employee_id)
+        cursor.execute(query, values)
+        database.commit()
+    
+    return jsonify({"message": "Employé mis à jour avec succès"})
+
+# ============================================
+# ADMIN - ACTIVER/DÉSACTIVER EMPLOYÉ
+# ============================================
+
+@app.route("/admin/employees/<int:employee_id>/toggle", methods=["POST"])
+@admin_required
+def toggle_employee_status(employee_id):
+    """Active/Désactive un employé"""
+    cursor = database.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT u.*, r.name as role_name 
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        WHERE u.id = %s AND r.name = 'developer'
+    """, (employee_id,))
+    
+    employee = cursor.fetchone()
+    if not employee:
+        return jsonify({"error": "Employé non trouvé"}), 404
+    
+    new_status = not employee['is_active']
+    cursor.execute("UPDATE users SET is_active = %s WHERE id = %s", (new_status, employee_id))
+    database.commit()
+    
+    status_text = "désactivé" if not new_status else "réactivé"
+    return jsonify({
+        "message": f"Employé {status_text}",
+        "is_active": new_status
+    })
+
+# ============================================
+# ADMIN - SUPPRIMER EMPLOYÉ
+# ============================================
+
+@app.route("/admin/employees/<int:employee_id>", methods=["DELETE"])
+@admin_required
+def delete_employee(employee_id):
+    """Supprime définitivement un employé"""
+    cursor = database.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT u.*, r.name as role_name 
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        WHERE u.id = %s AND r.name = 'developer'
+    """, (employee_id,))
+    
+    employee = cursor.fetchone()
+    if not employee:
+        return jsonify({"error": "Employé non trouvé"}), 404
+    
+    cursor.execute("DELETE FROM users WHERE id = %s", (employee_id,))
+    database.commit()
+    
+    return jsonify({"message": "Employé supprimé définitivement"})
+
+# ============================================
+# ADMIN - ANNULER UNE INVITATION
+# ============================================
+
+@app.route("/admin/cancel-invitation/<int:user_id>", methods=["DELETE"])
+@admin_required
+def cancel_invitation(user_id):
+    """Annule une invitation en attente"""
+    cursor = database.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT * FROM users 
+        WHERE id = %s AND is_active = 0 AND invitation_token IS NOT NULL
+    """, (user_id,))
+    
+    invitation = cursor.fetchone()
+    if not invitation:
+        return jsonify({"error": "Invitation non trouvée"}), 404
+    
+    cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+    database.commit()
+    
+    return jsonify({"message": "Invitation annulée"})
+
+
 if __name__ == "__main__":
-    app.run(debug=True,use_reloader=False)
+    app.run(debug=True, use_reloader=False)

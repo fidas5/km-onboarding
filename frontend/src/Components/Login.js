@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
 import mail from "../assets/email.png";
@@ -6,100 +7,73 @@ import illustration from "../assets/illustration.png";
 import secureIcon from "../assets/secure.png";
 import aiIcon from "../assets/ai.png";
 import rocket from "../assets/rocket.png";
-import ecrire from "../assets/ecrire.png";
 
 function Login({ setUser }) {
-  const [isRegister, setIsRegister] = useState(false);
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [showForgotConfirm, setShowForgotConfirm] = useState(false);
 
   const [form, setForm] = useState({
-    name: "",
     email: "",
     password: ""
   });
 
-  // Clear message after 5 seconds
-  const clearMessage = () => {
-    setTimeout(() => {
-      setMessage({ type: "", text: "" });
-    }, 5000);
+  const showToast = (type, text) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage({ type: "", text: "" }), 5000);
   };
 
-  // =========================
-  // LOGIN / REGISTER
-  // =========================
-  const handleSubmit = async () => {
-    // Validation
+  const handleLogin = async () => {
     if (!form.email || !form.password) {
-      setMessage({ type: "error", text: "Veuillez remplir tous les champs" });
-      clearMessage();
-      return;
-    }
-
-    if (isRegister && !form.name) {
-      setMessage({ type: "error", text: "Veuillez entrer votre nom complet" });
-      clearMessage();
+      showToast("error", "Veuillez remplir tous les champs");
       return;
     }
 
     setIsLoading(true);
-    setMessage({ type: "", text: "" });
 
     try {
-      const url = isRegister
-        ? "http://127.0.0.1:5000/register"
-        : "http://127.0.0.1:5000/login";
-
-      const res = await fetch(url, {
+      const res = await fetch("http://127.0.0.1:5000/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password
+        })
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        if (!isRegister) {
-          localStorage.setItem("user", JSON.stringify(data));
-          setUser(data);
-          setMessage({ type: "success", text: "Connexion réussie ! Redirection..." });
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("token", data.token);
+        
+        if (data.role === "admin") {
+          setUser(data.user);
+          navigate("/admin");
         } else {
-          setMessage({ type: "success", text: "Compte créé avec succès !" });
-          clearMessage();
-          setIsRegister(false);
-          setForm({
-            name: "",
-            email: "",
-            password: ""
-          });
+          setUser(data.user);
+          navigate("/projects");
         }
+        
+        showToast("success", "Connexion réussie !");
       } else {
-        setMessage({ type: "error", text: data.error || data.message || "Une erreur est survenue" });
-        clearMessage();
+        showToast("error", data.error || "Email ou mot de passe incorrect");
       }
     } catch (error) {
-      setMessage({ type: "error", text: "Erreur de connexion au serveur" });
-      clearMessage();
+      showToast("error", "Erreur de connexion au serveur");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // =========================
-  // FORGOT PASSWORD - Uses email from form
-  // =========================
   const handleForgotPassword = async () => {
-    // Check if email field is filled
     if (!form.email.trim()) {
-      setMessage({ type: "error", text: "Veuillez entrer votre email dans le champ ci-dessus" });
-      clearMessage();
+      showToast("error", "Veuillez entrer votre email");
       return;
     }
 
     setIsLoading(true);
-    setMessage({ type: "", text: "" });
 
     try {
       const res = await fetch("http://127.0.0.1:5000/forgot-password", {
@@ -111,34 +85,20 @@ function Login({ setUser }) {
       const data = await res.json();
 
       if (res.ok) {
-        setMessage({ type: "success", text: `Email de réinitialisation envoyé à ${form.email} ! Vérifiez votre boîte de réception.` });
-        clearMessage();
+        showToast("success", `Email envoyé à ${form.email}`);
         setShowForgotConfirm(false);
       } else {
-        setMessage({ type: "error", text: data.message || data.error || "Email non trouvé" });
-        clearMessage();
+        showToast("error", data.message || "Email non trouvé");
       }
     } catch (error) {
-      setMessage({ type: "error", text: "Erreur de connexion au serveur" });
-      clearMessage();
+      showToast("error", "Erreur de connexion");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Show confirmation dialog before sending
-  const confirmForgotPassword = () => {
-    if (!form.email.trim()) {
-      setMessage({ type: "error", text: "Veuillez entrer votre email dans le champ ci-dessus" });
-      clearMessage();
-      return;
-    }
-    setShowForgotConfirm(true);
-  };
-
   return (
     <div className="login-container">
-      {/* Success/Error Message Toast */}
       {message.text && (
         <div className={`message-toast ${message.type}`}>
           <span className="message-icon">
@@ -154,7 +114,6 @@ function Login({ setUser }) {
         </div>
       )}
 
-      {/* Forgot Password Confirmation Modal */}
       {showForgotConfirm && (
         <div className="modal-overlay" onClick={() => setShowForgotConfirm(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -163,17 +122,10 @@ function Login({ setUser }) {
             <div className="email-display">{form.email}</div>
             <p className="confirm-text">Voulez-vous continuer ?</p>
             <div className="modal-buttons">
-              <button 
-                className="btn-cancel" 
-                onClick={() => setShowForgotConfirm(false)}
-              >
+              <button className="btn-cancel" onClick={() => setShowForgotConfirm(false)}>
                 Annuler
               </button>
-              <button 
-                className="btn-submit" 
-                onClick={handleForgotPassword}
-                disabled={isLoading}
-              >
+              <button className="btn-submit" onClick={handleForgotPassword} disabled={isLoading}>
                 {isLoading ? "Envoi..." : "Confirmer"}
               </button>
             </div>
@@ -182,113 +134,62 @@ function Login({ setUser }) {
       )}
 
       <div className="login-card">
-        {/* LEFT */}
         <div className="login-left">
           <img src={illustration} alt="illustration" />
         </div>
 
-        {/* RIGHT */}
         <div className="login-right">
           <div className="header-block">
             <h1>
               <span className="blue">KM</span> Intelligent Platform
             </h1>
-            <p className="subtitle">
-              AI Onboarding des développeurs
-            </p>
+            <p className="subtitle">AI Onboarding des développeurs</p>
           </div>
 
           <div className="divider" />
 
           <div className="login-title-block">
-            <h3>
-              {isRegister ? "Créer un compte" : "Connexion"}
-            </h3>
-            <p className="small-text">
-              Accédez à votre espace d'apprentissage intelligent
-            </p>
+            <h3>Connexion</h3>
+            <p className="small-text">Accédez à votre espace d'apprentissage</p>
           </div>
 
-          {/* NAME (REGISTER ONLY) */}
-          {isRegister && (
-            <div className="input-box">
-              <img src={ecrire} alt="name" />
-              <input
-                type="text"
-                placeholder="Nom complet"
-                value={form.name}
-                onChange={(e) =>
-                  setForm({ ...form, name: e.target.value })
-                }
-              />
-            </div>
-          )}
-          
-          {/* EMAIL */}
           <div className="input-box">
             <img src={mail} alt="email" />
             <input
               type="email"
               placeholder="Email"
               value={form.email}
-              onChange={(e) =>
-                setForm({ ...form, email: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </div>
 
-          {/* PASSWORD */}
           <div className="input-box">
             <img src={secureIcon} alt="password" />
             <input
               type="password"
               placeholder="Mot de passe"
               value={form.password}
-              onChange={(e) =>
-                setForm({ ...form, password: e.target.value })
-              }
-              onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              onKeyPress={(e) => e.key === "Enter" && handleLogin()}
             />
           </div>
 
-          {/* BUTTON */}
-          <button 
-            onClick={handleSubmit} 
-            disabled={isLoading}
-            className={isLoading ? "loading" : ""}
-          >
-            {isLoading ? (
-              <span className="spinner"></span>
-            ) : (
-              isRegister ? "Créer compte" : "Se connecter"
-            )}
+          <button onClick={handleLogin} disabled={isLoading}>
+            {isLoading ? <span className="spinner"></span> : "Se connecter"}
           </button>
 
-          {/* LINKS */}
           <div className="links">
-            {!isRegister && (
-              <p className="forgot" onClick={confirmForgotPassword}>
-                Mot de passe oublié ?
-              </p>
-            )}
+            <p className="forgot" onClick={() => setShowForgotConfirm(true)}>
+              Mot de passe oublié ?
+            </p>
 
             <div className="links-divider" />
 
-            <p className="signup">
-              {isRegister ? "Déjà un compte ?" : "Nouveau ici ?"}
-              <span onClick={() => {
-                setIsRegister(!isRegister);
-                setMessage({ type: "", text: "" });
-              }}>
-                {" "}
-                {isRegister ? "Connexion" : "Créer un compte"}
-              </span>
-            </p>
+           
           </div>
         </div>
       </div>
 
-      {/* FEATURES */}
       <div className="features">
         <div className="feature-item">
           <img src={secureIcon} alt="secure" />

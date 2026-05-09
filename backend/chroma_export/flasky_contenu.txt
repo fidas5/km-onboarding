@@ -1,0 +1,5575 @@
+📦 PROJET: FLASKY
+============================================================
+
+Document 1:
+ID: bc3a0b7a-bd8d-4943-96d0-6485633d123b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\config.py
+Contenu:
+import os
+basedir = os.path.abspath(os.path.dirname(__file__))
+----------------------------------------
+
+Document 2:
+ID: 3310f6ff-a35b-4fc8-ab0a-43a62d9ea14b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\config.py
+Contenu:
+class Config:
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'hard to guess string'
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', '587'))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() in \
+        ['true', 'on', '1']
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
+----------------------------------------
+
+Document 3:
+ID: 51d005c6-66a9-4488-8792-b62056644dfc
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\config.py
+Contenu:
+FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
+    FLASKY_MAIL_SENDER = 'Flasky Admin <flasky@example.com>'
+    FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
+    SSL_REDIRECT = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_RECORD_QUERIES = True
+    FLASKY_POSTS_PER_PAGE = 20
+    FLASKY_FOLLOWERS_PER_PAGE = 50
+    FLASKY_COMMENTS_PER_PAGE = 30
+    FLASKY_SLOW_DB_QUERY_TIME = 0.5
+----------------------------------------
+
+Document 4:
+ID: 1a94c77b-1a50-4b37-bb83-36e81dfcb472
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\config.py
+Contenu:
+@staticmethod
+    def init_app(app):
+        pass
+
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+
+
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
+        'sqlite://'
+    WTF_CSRF_ENABLED = False
+----------------------------------------
+
+Document 5:
+ID: ce2927dc-367c-4cc6-8334-e744a34087bb
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\config.py
+Contenu:
+class ProductionConfig(Config):
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+    SERVER_NAME = os.environ['SERVER_NAME']  # configure the domain name in use
+
+    @classmethod
+    def init_app(cls, app):
+        Config.init_app(app)
+----------------------------------------
+
+Document 6:
+ID: 7f3cb542-1cee-4259-b272-cef510f1e7f6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\config.py
+Contenu:
+# email errors to the administrators
+        import logging
+        from logging.handlers import SMTPHandler
+        credentials = None
+        secure = None
+        if getattr(cls, 'MAIL_USERNAME', None) is not None:
+            credentials = (cls.MAIL_USERNAME, cls.MAIL_PASSWORD)
+            if getattr(cls, 'MAIL_USE_TLS', None):
+                secure = ()
+        mail_handler = SMTPHandler(
+            mailhost=(cls.MAIL_SERVER, cls.MAIL_PORT),
+----------------------------------------
+
+Document 7:
+ID: 2490dc4d-4516-4e80-aab3-f7e8889e1844
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\config.py
+Contenu:
+fromaddr=cls.FLASKY_MAIL_SENDER,
+            toaddrs=[cls.FLASKY_ADMIN],
+            subject=cls.FLASKY_MAIL_SUBJECT_PREFIX + ' Application Error',
+            credentials=credentials,
+            secure=secure)
+        mail_handler.setLevel(logging.ERROR)
+        app.logger.addHandler(mail_handler)
+----------------------------------------
+
+Document 8:
+ID: b04d990a-1d29-4818-96dd-d06cef034f5a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\config.py
+Contenu:
+class HerokuConfig(ProductionConfig):
+    SSL_REDIRECT = True if os.environ.get('DYNO') else False
+
+    @classmethod
+    def init_app(cls, app):
+        ProductionConfig.init_app(app)
+
+        # handle reverse proxy server headers
+        try:
+            from werkzeug.middleware.proxy_fix import ProxyFix
+        except ImportError:
+            from werkzeug.contrib.fixers import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app)
+----------------------------------------
+
+Document 9:
+ID: 8d8c2caf-f296-418a-b164-e405b05ac7f2
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\config.py
+Contenu:
+# log to stderr
+        import logging
+        from logging import StreamHandler
+        file_handler = StreamHandler()
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+
+
+class DockerConfig(ProductionConfig):
+    @classmethod
+    def init_app(cls, app):
+        ProductionConfig.init_app(app)
+----------------------------------------
+
+Document 10:
+ID: c5517beb-df45-4164-84b6-c95ffa1b8bbb
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\config.py
+Contenu:
+# log to stderr
+        import logging
+        from logging import StreamHandler
+        file_handler = StreamHandler()
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+
+
+class UnixConfig(ProductionConfig):
+    @classmethod
+    def init_app(cls, app):
+        ProductionConfig.init_app(app)
+----------------------------------------
+
+Document 11:
+ID: 39264a66-649e-4bae-818c-ba893a002f16
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\config.py
+Contenu:
+# log to syslog
+        import logging
+        from logging.handlers import SysLogHandler
+        syslog_handler = SysLogHandler()
+        syslog_handler.setLevel(logging.INFO)
+        app.logger.addHandler(syslog_handler)
+
+
+config = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+    'heroku': HerokuConfig,
+    'docker': DockerConfig,
+    'unix': UnixConfig,
+
+    'default': DevelopmentConfig
+}
+----------------------------------------
+
+Document 12:
+ID: db6b23d9-fbf0-4ed9-8a01-adf4a97b16fe
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\flasky.py
+Contenu:
+import os
+from dotenv import load_dotenv
+
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
+
+COV = None
+if os.environ.get('FLASK_COVERAGE'):
+    import coverage
+    COV = coverage.coverage(branch=True, include='app/*')
+    COV.start()
+
+import sys
+import click
+from flask_migrate import Migrate, upgrade
+from app import create_app, db
+from app.models import User, Follow, Role, Permission, Post, Comment
+----------------------------------------
+
+Document 13:
+ID: ad6be17b-8724-45ef-8287-9001824c078c
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\flasky.py
+Contenu:
+app = create_app(os.getenv('FLASK_CONFIG') or 'default')
+migrate = Migrate(app, db)
+
+
+@app.shell_context_processor
+def make_shell_context():
+    return dict(db=db, User=User, Follow=Follow, Role=Role,
+                Permission=Permission, Post=Post, Comment=Comment)
+----------------------------------------
+
+Document 14:
+ID: aaa559a5-5bf6-4a67-b5c2-e51314e90f0d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\flasky.py
+Contenu:
+@app.cli.command()
+@click.option('--coverage/--no-coverage', default=False,
+              help='Run tests under code coverage.')
+@click.argument('test_names', nargs=-1)
+def test(coverage, test_names):
+    """Run the unit tests."""
+    if coverage and not os.environ.get('FLASK_COVERAGE'):
+        import subprocess
+        os.environ['FLASK_COVERAGE'] = '1'
+        sys.exit(subprocess.call(sys.argv))
+----------------------------------------
+
+Document 15:
+ID: 64bd39ea-3d0b-42b9-ab7b-13d827a0f286
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\flasky.py
+Contenu:
+import unittest
+    if test_names:
+        tests = unittest.TestLoader().loadTestsFromNames(test_names)
+    else:
+        tests = unittest.TestLoader().discover('tests')
+    unittest.TextTestRunner(verbosity=2).run(tests)
+    if COV:
+        COV.stop()
+        COV.save()
+        print('Coverage Summary:')
+        COV.report()
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        covdir = os.path.join(basedir, 'tmp/coverage')
+        COV.html_report(directory=covdir)
+----------------------------------------
+
+Document 16:
+ID: 666a36e8-6b4b-4cd9-8697-0613909cf46f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\flasky.py
+Contenu:
+COV.html_report(directory=covdir)
+        print('HTML version: file://%s/index.html' % covdir)
+        COV.erase()
+----------------------------------------
+
+Document 17:
+ID: 8f0b98c3-6ae4-480e-94b4-bb583edfec49
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\flasky.py
+Contenu:
+@app.cli.command()
+@click.option('--length', default=25,
+              help='Number of functions to include in the profiler report.')
+@click.option('--profile-dir', default=None,
+              help='Directory where profiler data files are saved.')
+def profile(length, profile_dir):
+    """Start the application under the code profiler."""
+    from werkzeug.contrib.profiler import ProfilerMiddleware
+    app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length],
+----------------------------------------
+
+Document 18:
+ID: 053c4800-9cee-4d1a-a657-1873f59b69e4
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\flasky.py
+Contenu:
+profile_dir=profile_dir)
+    app.run()
+----------------------------------------
+
+Document 19:
+ID: 6c24eccc-1cbe-4a78-84e0-1c64db8451f6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\flasky.py
+Contenu:
+@app.cli.command()
+def deploy():
+    """Run deployment tasks."""
+    # migrate database to latest revision
+    upgrade()
+
+    # create or update user roles
+    Role.insert_roles()
+
+    # ensure all users are following themselves
+    User.add_self_follows()
+----------------------------------------
+
+Document 20:
+ID: 02306e26-db64-4b58-989f-133aa95c70b8
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\README.md
+Contenu:
+Flasky
+======
+
+This repository contains the source code examples for the second edition of my O'Reilly book [Flask Web Development](http://www.flaskbook.com).
+
+The commits and tags in this repository were carefully created to match the sequence in which concepts are presented in the book. Please read the section titled "How to Work with the Example Code" in the book's preface for instructions.
+
+For Readers of the First Edition of the Book
+--------------------------------------------
+----------------------------------------
+
+Document 21:
+ID: cf5400e5-262b-4f7e-a475-2155898cfd69
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\README.md
+Contenu:
+The code examples for the first edition of the book were moved to a different repository: [https://github.com/miguelgrinberg/flasky-first-edition](https://github.com/miguelgrinberg/flasky-first-edition).
+----------------------------------------
+
+Document 22:
+ID: 31e93ea9-9a42-48ed-ad48-04214dfa0112
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\requirements.txt
+Contenu:
+# this requirements file is used by Heroku
+# requirements for other configurations are located in the requirements subdirectory
+-r requirements/heroku.txt
+----------------------------------------
+
+Document 23:
+ID: 2abac185-8330-4cc6-b0de-e47714b5e3ed
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\decorators.py
+Contenu:
+from functools import wraps
+from flask import abort
+from flask_login import current_user
+from .models import Permission
+
+
+def permission_required(permission):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.can(permission):
+                abort(403)
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+def admin_required(f):
+    return permission_required(Permission.ADMIN)(f)
+----------------------------------------
+
+Document 24:
+ID: a2c60f61-5171-493f-b281-46eca3e38067
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\email.py
+Contenu:
+from threading import Thread
+from flask import current_app, render_template
+from flask_mail import Message
+from . import mail
+
+
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
+----------------------------------------
+
+Document 25:
+ID: 60521e92-675d-4b94-8e29-1429d6265b8a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\email.py
+Contenu:
+def send_email(to, subject, template, **kwargs):
+    app = current_app._get_current_object()
+    msg = Message(app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + ' ' + subject,
+                  sender=app.config['FLASKY_MAIL_SENDER'], recipients=[to])
+    msg.body = render_template(template + '.txt', **kwargs)
+    msg.html = render_template(template + '.html', **kwargs)
+    thr = Thread(target=send_async_email, args=[app, msg])
+    thr.start()
+    return thr
+----------------------------------------
+
+Document 26:
+ID: fe4e107b-6640-4c37-8434-6ad2defc2bf8
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\exceptions.py
+Contenu:
+class ValidationError(ValueError):
+    pass
+----------------------------------------
+
+Document 27:
+ID: 130fbc18-b5be-4220-83af-33a2a3505f05
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\fake.py
+Contenu:
+from random import randint
+from sqlalchemy.exc import IntegrityError
+from faker import Faker
+from . import db
+from .models import User, Post
+----------------------------------------
+
+Document 28:
+ID: eccd5e1e-9fe9-4554-a392-cf95984247e5
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\fake.py
+Contenu:
+def users(count=100):
+    fake = Faker()
+    i = 0
+    while i < count:
+        u = User(email=fake.email(),
+                 username=fake.user_name(),
+                 password='password',
+                 confirmed=True,
+                 name=fake.name(),
+                 location=fake.city(),
+                 about_me=fake.text(),
+                 member_since=fake.past_date())
+        db.session.add(u)
+        try:
+            db.session.commit()
+            i += 1
+----------------------------------------
+
+Document 29:
+ID: dfd66e17-7fa9-4103-b156-6d8696fe8eb1
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\fake.py
+Contenu:
+i += 1
+        except IntegrityError:
+            db.session.rollback()
+----------------------------------------
+
+Document 30:
+ID: ff6be2a5-4712-4c3e-a7fd-33b73614b8d6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\fake.py
+Contenu:
+def posts(count=100):
+    fake = Faker()
+    user_count = User.query.count()
+    for i in range(count):
+        u = User.query.offset(randint(0, user_count - 1)).first()
+        p = Post(body=fake.text(),
+                 timestamp=fake.past_date(),
+                 author=u)
+        db.session.add(p)
+    db.session.commit()
+----------------------------------------
+
+Document 31:
+ID: b741c9c8-8287-4f32-aaf9-729ef5df7fb6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+from datetime import datetime
+import hashlib
+from werkzeug.security import generate_password_hash, check_password_hash
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from markdown import markdown
+import bleach
+from flask import current_app, request, url_for
+from flask_login import UserMixin, AnonymousUserMixin
+from app.exceptions import ValidationError
+from . import db, login_manager
+----------------------------------------
+
+Document 32:
+ID: a0bd995a-82fc-46bc-b1e2-bfbeef758840
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+class Permission:
+    FOLLOW = 1
+    COMMENT = 2
+    WRITE = 4
+    MODERATE = 8
+    ADMIN = 16
+
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    default = db.Column(db.Boolean, default=False, index=True)
+    permissions = db.Column(db.Integer)
+    users = db.relationship('User', backref='role', lazy='dynamic')
+----------------------------------------
+
+Document 33:
+ID: ae97d585-0073-45cb-b1a2-4a71c0888767
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def __init__(self, **kwargs):
+        super(Role, self).__init__(**kwargs)
+        if self.permissions is None:
+            self.permissions = 0
+----------------------------------------
+
+Document 34:
+ID: 442af04d-a45a-4a57-9135-5ac4047521f0
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+@staticmethod
+    def insert_roles():
+        roles = {
+            'User': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE],
+            'Moderator': [Permission.FOLLOW, Permission.COMMENT,
+                          Permission.WRITE, Permission.MODERATE],
+            'Administrator': [Permission.FOLLOW, Permission.COMMENT,
+                              Permission.WRITE, Permission.MODERATE,
+                              Permission.ADMIN],
+        }
+        default_role = 'User'
+----------------------------------------
+
+Document 35:
+ID: 14ca3ad8-890b-472d-a5db-f1c1b54de66f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+}
+        default_role = 'User'
+        for r in roles:
+            role = Role.query.filter_by(name=r).first()
+            if role is None:
+                role = Role(name=r)
+            role.reset_permissions()
+            for perm in roles[r]:
+                role.add_permission(perm)
+            role.default = (role.name == default_role)
+            db.session.add(role)
+        db.session.commit()
+----------------------------------------
+
+Document 36:
+ID: cceb50e9-310b-4739-b9db-791bbea8fd88
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def add_permission(self, perm):
+        if not self.has_permission(perm):
+            self.permissions += perm
+
+    def remove_permission(self, perm):
+        if self.has_permission(perm):
+            self.permissions -= perm
+
+    def reset_permissions(self):
+        self.permissions = 0
+
+    def has_permission(self, perm):
+        return self.permissions & perm == perm
+
+    def __repr__(self):
+        return '<Role %r>' % self.name
+----------------------------------------
+
+Document 37:
+ID: d1188b7d-bd94-4d83-9558-3d81c8daad2f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+class Follow(db.Model):
+    __tablename__ = 'follows'
+    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+----------------------------------------
+
+Document 38:
+ID: 9f13d115-3385-40a4-af56-ea32bac05187
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+class User(UserMixin, db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(64), unique=True, index=True)
+    username = db.Column(db.String(64), unique=True, index=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    password_hash = db.Column(db.String(128))
+    confirmed = db.Column(db.Boolean, default=False)
+    name = db.Column(db.String(64))
+    location = db.Column(db.String(64))
+----------------------------------------
+
+Document 39:
+ID: 1d38629d-73cd-4ea5-a1a5-32b226831da5
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+location = db.Column(db.String(64))
+    about_me = db.Column(db.Text())
+    member_since = db.Column(db.DateTime(), default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+    avatar_hash = db.Column(db.String(32))
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
+    followed = db.relationship('Follow',
+                               foreign_keys=[Follow.follower_id],
+----------------------------------------
+
+Document 40:
+ID: d9b0fb75-4922-4e35-9517-4b6b5b7cbf4d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+backref=db.backref('follower', lazy='joined'),
+                               lazy='dynamic',
+                               cascade='all, delete-orphan')
+    followers = db.relationship('Follow',
+                                foreign_keys=[Follow.followed_id],
+                                backref=db.backref('followed', lazy='joined'),
+                                lazy='dynamic',
+                                cascade='all, delete-orphan')
+----------------------------------------
+
+Document 41:
+ID: 53dd3e7f-4222-4838-8c71-815fe879d77a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+comments = db.relationship('Comment', backref='author', lazy='dynamic')
+----------------------------------------
+
+Document 42:
+ID: 63474d2f-9353-40a4-b014-9ae4e60da50e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+@staticmethod
+    def add_self_follows():
+        for user in User.query.all():
+            if not user.is_following(user):
+                user.follow(user)
+                db.session.add(user)
+                db.session.commit()
+----------------------------------------
+
+Document 43:
+ID: 3eaf1be2-c024-4f95-9823-e01138ec4de6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def __init__(self, **kwargs):
+        super(User, self).__init__(**kwargs)
+        if self.role is None:
+            if self.email == current_app.config['FLASKY_ADMIN']:
+                self.role = Role.query.filter_by(name='Administrator').first()
+            if self.role is None:
+                self.role = Role.query.filter_by(default=True).first()
+        if self.email is not None and self.avatar_hash is None:
+            self.avatar_hash = self.gravatar_hash()
+----------------------------------------
+
+Document 44:
+ID: c48a8ce3-e0ab-46f1-ad1f-f6218818a1d7
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+self.follow(self)
+----------------------------------------
+
+Document 45:
+ID: a3f3034c-4a70-4a60-9ac4-4e232a09aa8e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+@property
+    def password(self):
+        raise AttributeError('password is not a readable attribute')
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
+----------------------------------------
+
+Document 46:
+ID: 38b0206d-3ac8-42bf-8c1e-0b8e0c119633
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def generate_confirmation_token(self, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'confirm': self.id}).decode('utf-8')
+----------------------------------------
+
+Document 47:
+ID: e05469d9-9725-4244-8ee0-7d8832728218
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def confirm(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token.encode('utf-8'))
+        except:
+            return False
+        if data.get('confirm') != self.id:
+            return False
+        self.confirmed = True
+        db.session.add(self)
+        return True
+----------------------------------------
+
+Document 48:
+ID: 683a595b-d150-433a-9c24-694238410b0b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def generate_reset_token(self, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'reset': self.id}).decode('utf-8')
+----------------------------------------
+
+Document 49:
+ID: 6db7b4b5-903f-46e5-9bf2-4a6f88ac0cc1
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+@staticmethod
+    def reset_password(token, new_password):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token.encode('utf-8'))
+        except:
+            return False
+        user = User.query.get(data.get('reset'))
+        if user is None:
+            return False
+        user.password = new_password
+        db.session.add(user)
+        return True
+----------------------------------------
+
+Document 50:
+ID: 742f422e-f6e0-45ea-b467-8da8f8e1c30d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def generate_email_change_token(self, new_email, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps(
+            {'change_email': self.id, 'new_email': new_email}).decode('utf-8')
+----------------------------------------
+
+Document 51:
+ID: d325bd07-9640-406d-837a-c7e4bb23840e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def change_email(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token.encode('utf-8'))
+        except:
+            return False
+        if data.get('change_email') != self.id:
+            return False
+        new_email = data.get('new_email')
+        if new_email is None:
+            return False
+        if self.query.filter_by(email=new_email).first() is not None:
+            return False
+        self.email = new_email
+----------------------------------------
+
+Document 52:
+ID: 08f6912a-b2b9-4491-a540-b24d02b84f87
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+self.email = new_email
+        self.avatar_hash = self.gravatar_hash()
+        db.session.add(self)
+        return True
+----------------------------------------
+
+Document 53:
+ID: a59cd4c7-d121-4d80-9780-1e2126b161d6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def can(self, perm):
+        return self.role is not None and self.role.has_permission(perm)
+
+    def is_administrator(self):
+        return self.can(Permission.ADMIN)
+
+    def ping(self):
+        self.last_seen = datetime.utcnow()
+        db.session.add(self)
+
+    def gravatar_hash(self):
+        return hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
+----------------------------------------
+
+Document 54:
+ID: 42a6c98b-826f-4a4a-bade-40b717e435b0
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def gravatar(self, size=100, default='identicon', rating='g'):
+        url = 'https://secure.gravatar.com/avatar'
+        hash = self.avatar_hash or self.gravatar_hash()
+        return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
+            url=url, hash=hash, size=size, default=default, rating=rating)
+
+    def follow(self, user):
+        if not self.is_following(user):
+            f = Follow(follower=self, followed=user)
+            db.session.add(f)
+----------------------------------------
+
+Document 55:
+ID: 917614fd-b6fb-4605-bb5f-0198cbcad617
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def unfollow(self, user):
+        f = self.followed.filter_by(followed_id=user.id).first()
+        if f:
+            db.session.delete(f)
+
+    def is_following(self, user):
+        if user.id is None:
+            return False
+        return self.followed.filter_by(
+            followed_id=user.id).first() is not None
+----------------------------------------
+
+Document 56:
+ID: 4feba42f-f5c3-41a9-80ac-1a38ebf5170b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def is_followed_by(self, user):
+        if user.id is None:
+            return False
+        return self.followers.filter_by(
+            follower_id=user.id).first() is not None
+
+    @property
+    def followed_posts(self):
+        return Post.query.join(Follow, Follow.followed_id == Post.author_id)\
+            .filter(Follow.follower_id == self.id)
+----------------------------------------
+
+Document 57:
+ID: da59991a-3952-4f03-b4bc-f5d184229d26
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def to_json(self):
+        json_user = {
+            'url': url_for('api.get_user', id=self.id),
+            'username': self.username,
+            'member_since': self.member_since,
+            'last_seen': self.last_seen,
+            'posts_url': url_for('api.get_user_posts', id=self.id),
+            'followed_posts_url': url_for('api.get_user_followed_posts',
+                                          id=self.id),
+            'post_count': self.posts.count()
+        }
+----------------------------------------
+
+Document 58:
+ID: 4628b423-5da8-449a-b0a4-09fa9f8d4e20
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+}
+        return json_user
+----------------------------------------
+
+Document 59:
+ID: 7dbca636-6fb8-4f15-b71a-c2fed7fc0958
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def generate_auth_token(self, expiration):
+        s = Serializer(current_app.config['SECRET_KEY'],
+                       expires_in=expiration)
+        return s.dumps({'id': self.id}).decode('utf-8')
+
+    @staticmethod
+    def verify_auth_token(token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return None
+        return User.query.get(data['id'])
+----------------------------------------
+
+Document 60:
+ID: 8c0fab94-f10b-44d6-9fe4-67ca7d9ab215
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def __repr__(self):
+        return '<User %r>' % self.username
+
+
+class AnonymousUser(AnonymousUserMixin):
+    def can(self, permissions):
+        return False
+
+    def is_administrator(self):
+        return False
+
+login_manager.anonymous_user = AnonymousUser
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+----------------------------------------
+
+Document 61:
+ID: bf39075e-7cc4-49e8-8c5c-a629ccd37f61
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+class Post(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    body_html = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    comments = db.relationship('Comment', backref='post', lazy='dynamic')
+----------------------------------------
+
+Document 62:
+ID: 9156f001-d8d0-4e22-9f1b-95ec3f72bbc3
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+@staticmethod
+    def on_changed_body(target, value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code',
+                        'em', 'i', 'li', 'ol', 'pre', 'strong', 'ul',
+                        'h1', 'h2', 'h3', 'p']
+        target.body_html = bleach.linkify(bleach.clean(
+            markdown(value, output_format='html'),
+            tags=allowed_tags, strip=True))
+----------------------------------------
+
+Document 63:
+ID: 3536d7f9-3388-4d63-b5b3-ceb4d3004312
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def to_json(self):
+        json_post = {
+            'url': url_for('api.get_post', id=self.id),
+            'body': self.body,
+            'body_html': self.body_html,
+            'timestamp': self.timestamp,
+            'author_url': url_for('api.get_user', id=self.author_id),
+            'comments_url': url_for('api.get_post_comments', id=self.id),
+            'comment_count': self.comments.count()
+        }
+        return json_post
+----------------------------------------
+
+Document 64:
+ID: bd13edae-8daf-478e-8038-42daf8fde990
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+@staticmethod
+    def from_json(json_post):
+        body = json_post.get('body')
+        if body is None or body == '':
+            raise ValidationError('post does not have a body')
+        return Post(body=body)
+
+
+db.event.listen(Post.body, 'set', Post.on_changed_body)
+----------------------------------------
+
+Document 65:
+ID: 9afe83f8-61d2-4e82-b8be-201ea8fe1d60
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+class Comment(db.Model):
+    __tablename__ = 'comments'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    body_html = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    disabled = db.Column(db.Boolean)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+----------------------------------------
+
+Document 66:
+ID: b11391b3-17e0-4977-bf7a-38b6c06fe962
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+@staticmethod
+    def on_changed_body(target, value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'code', 'em', 'i',
+                        'strong']
+        target.body_html = bleach.linkify(bleach.clean(
+            markdown(value, output_format='html'),
+            tags=allowed_tags, strip=True))
+----------------------------------------
+
+Document 67:
+ID: c968f4ce-8867-47a5-bafc-b36ddc3ffffd
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+def to_json(self):
+        json_comment = {
+            'url': url_for('api.get_comment', id=self.id),
+            'post_url': url_for('api.get_post', id=self.post_id),
+            'body': self.body,
+            'body_html': self.body_html,
+            'timestamp': self.timestamp,
+            'author_url': url_for('api.get_user', id=self.author_id),
+        }
+        return json_comment
+----------------------------------------
+
+Document 68:
+ID: 8e5db18f-ff3c-4c15-b092-aaa3918deabc
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\models.py
+Contenu:
+@staticmethod
+    def from_json(json_comment):
+        body = json_comment.get('body')
+        if body is None or body == '':
+            raise ValidationError('comment does not have a body')
+        return Comment(body=body)
+
+
+db.event.listen(Comment.body, 'set', Comment.on_changed_body)
+----------------------------------------
+
+Document 69:
+ID: 4a95c83c-3e6e-4332-8227-2320c9071544
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\__init__.py
+Contenu:
+from flask import Flask
+from flask_bootstrap import Bootstrap
+from flask_mail import Mail
+from flask_moment import Moment
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from flask_pagedown import PageDown
+from config import config
+
+bootstrap = Bootstrap()
+mail = Mail()
+moment = Moment()
+db = SQLAlchemy()
+pagedown = PageDown()
+
+login_manager = LoginManager()
+login_manager.login_view = 'auth.login'
+----------------------------------------
+
+Document 70:
+ID: 1835852b-6d85-43a2-8b76-d68f8236caa8
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\__init__.py
+Contenu:
+def create_app(config_name):
+    app = Flask(__name__)
+    app.config.from_object(config[config_name])
+    config[config_name].init_app(app)
+
+    bootstrap.init_app(app)
+    mail.init_app(app)
+    moment.init_app(app)
+    db.init_app(app)
+    login_manager.init_app(app)
+    pagedown.init_app(app)
+
+    if app.config['SSL_REDIRECT']:
+        from flask_sslify import SSLify
+        sslify = SSLify(app)
+
+    from .main import main as main_blueprint
+    app.register_blueprint(main_blueprint)
+----------------------------------------
+
+Document 71:
+ID: ded1e22e-25e7-4106-bc8c-60e1b52d01c2
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\__init__.py
+Contenu:
+from .auth import auth as auth_blueprint
+    app.register_blueprint(auth_blueprint, url_prefix='/auth')
+
+    from .api import api as api_blueprint
+    app.register_blueprint(api_blueprint, url_prefix='/api/v1')
+
+    return app
+----------------------------------------
+
+Document 72:
+ID: 0dba738e-0954-4602-8aa5-5bd397f7021b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\authentication.py
+Contenu:
+from flask import g, jsonify
+from flask_httpauth import HTTPBasicAuth
+from ..models import User
+from . import api
+from .errors import unauthorized, forbidden
+
+auth = HTTPBasicAuth()
+----------------------------------------
+
+Document 73:
+ID: 7255aecd-4885-47a3-9aba-1ed8b26c1988
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\authentication.py
+Contenu:
+@auth.verify_password
+def verify_password(email_or_token, password):
+    if email_or_token == '':
+        return False
+    if password == '':
+        g.current_user = User.verify_auth_token(email_or_token)
+        g.token_used = True
+        return g.current_user is not None
+    user = User.query.filter_by(email=email_or_token.lower()).first()
+    if not user:
+        return False
+    g.current_user = user
+    g.token_used = False
+    return user.verify_password(password)
+----------------------------------------
+
+Document 74:
+ID: 81492c69-fab3-4351-a485-afc1926c4e20
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\authentication.py
+Contenu:
+@auth.error_handler
+def auth_error():
+    return unauthorized('Invalid credentials')
+
+
+@api.before_request
+@auth.login_required
+def before_request():
+    if not g.current_user.is_anonymous and \
+            not g.current_user.confirmed:
+        return forbidden('Unconfirmed account')
+----------------------------------------
+
+Document 75:
+ID: 5ad06499-d1bc-4deb-8004-72f0ff004e9b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\authentication.py
+Contenu:
+@api.route('/tokens/', methods=['POST'])
+def get_token():
+    if g.current_user.is_anonymous or g.token_used:
+        return unauthorized('Invalid credentials')
+    return jsonify({'token': g.current_user.generate_auth_token(
+        expiration=3600), 'expiration': 3600})
+----------------------------------------
+
+Document 76:
+ID: 871998d5-83a6-4dd1-a81a-8728afcade02
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\comments.py
+Contenu:
+from flask import jsonify, request, g, url_for, current_app
+from .. import db
+from ..models import Post, Permission, Comment
+from . import api
+from .decorators import permission_required
+----------------------------------------
+
+Document 77:
+ID: 1d095c48-2610-4b2c-83a2-3bccd28e688b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\comments.py
+Contenu:
+@api.route('/comments/')
+def get_comments():
+    page = request.args.get('page', 1, type=int)
+    pagination = Comment.query.order_by(Comment.timestamp.desc()).paginate(
+        page=page, per_page=current_app.config['FLASKY_COMMENTS_PER_PAGE'],
+        error_out=False)
+    comments = pagination.items
+    prev = None
+    if pagination.has_prev:
+        prev = url_for('api.get_comments', page=page-1)
+    next = None
+    if pagination.has_next:
+----------------------------------------
+
+Document 78:
+ID: 26499ffa-757a-4feb-9259-d58c167449b1
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\comments.py
+Contenu:
+next = None
+    if pagination.has_next:
+        next = url_for('api.get_comments', page=page+1)
+    return jsonify({
+        'comments': [comment.to_json() for comment in comments],
+        'prev': prev,
+        'next': next,
+        'count': pagination.total
+    })
+----------------------------------------
+
+Document 79:
+ID: 907dc8ba-9878-426f-b7be-6f9f93320cb9
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\comments.py
+Contenu:
+@api.route('/comments/<int:id>')
+def get_comment(id):
+    comment = Comment.query.get_or_404(id)
+    return jsonify(comment.to_json())
+----------------------------------------
+
+Document 80:
+ID: 2f0e41b0-8e15-48ed-9b21-e6e8498ac2c2
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\comments.py
+Contenu:
+@api.route('/posts/<int:id>/comments/')
+def get_post_comments(id):
+    post = Post.query.get_or_404(id)
+    page = request.args.get('page', 1, type=int)
+    pagination = post.comments.order_by(Comment.timestamp.asc()).paginate(
+        page=page, per_page=current_app.config['FLASKY_COMMENTS_PER_PAGE'],
+        error_out=False)
+    comments = pagination.items
+    prev = None
+    if pagination.has_prev:
+        prev = url_for('api.get_post_comments', id=id, page=page-1)
+    next = None
+----------------------------------------
+
+Document 81:
+ID: 036b1fda-8437-4b07-a954-fe786cfbbeb9
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\comments.py
+Contenu:
+next = None
+    if pagination.has_next:
+        next = url_for('api.get_post_comments', id=id, page=page+1)
+    return jsonify({
+        'comments': [comment.to_json() for comment in comments],
+        'prev': prev,
+        'next': next,
+        'count': pagination.total
+    })
+----------------------------------------
+
+Document 82:
+ID: be3cc0fb-8c76-4b65-969d-c132098c9320
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\comments.py
+Contenu:
+@api.route('/posts/<int:id>/comments/', methods=['POST'])
+@permission_required(Permission.COMMENT)
+def new_post_comment(id):
+    post = Post.query.get_or_404(id)
+    comment = Comment.from_json(request.json)
+    comment.author = g.current_user
+    comment.post = post
+    db.session.add(comment)
+    db.session.commit()
+    return jsonify(comment.to_json()), 201, \
+        {'Location': url_for('api.get_comment', id=comment.id)}
+----------------------------------------
+
+Document 83:
+ID: ecf6c136-c192-4415-ba3c-865c8d7902c2
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\decorators.py
+Contenu:
+from functools import wraps
+from flask import g
+from .errors import forbidden
+
+
+def permission_required(permission):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not g.current_user.can(permission):
+                return forbidden('Insufficient permissions')
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+----------------------------------------
+
+Document 84:
+ID: 0e511cec-3bf8-40f6-9977-a7bd08b7e75c
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\errors.py
+Contenu:
+from flask import jsonify
+from app.exceptions import ValidationError
+from . import api
+
+
+def bad_request(message):
+    response = jsonify({'error': 'bad request', 'message': message})
+    response.status_code = 400
+    return response
+
+
+def unauthorized(message):
+    response = jsonify({'error': 'unauthorized', 'message': message})
+    response.status_code = 401
+    return response
+----------------------------------------
+
+Document 85:
+ID: 5ade32d5-3537-43e4-aabf-988a6dfd598a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\errors.py
+Contenu:
+def forbidden(message):
+    response = jsonify({'error': 'forbidden', 'message': message})
+    response.status_code = 403
+    return response
+
+
+@api.errorhandler(ValidationError)
+def validation_error(e):
+    return bad_request(e.args[0])
+----------------------------------------
+
+Document 86:
+ID: 7dfc193a-3f87-4f90-ab06-fc22b0b3327d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\posts.py
+Contenu:
+from flask import jsonify, request, g, url_for, current_app
+from .. import db
+from ..models import Post, Permission
+from . import api
+from .decorators import permission_required
+from .errors import forbidden
+----------------------------------------
+
+Document 87:
+ID: 78fc30e7-8238-4339-bf10-439365310584
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\posts.py
+Contenu:
+@api.route('/posts/')
+def get_posts():
+    page = request.args.get('page', 1, type=int)
+    pagination = Post.query.paginate(
+        page=page, per_page=current_app.config['FLASKY_POSTS_PER_PAGE'],
+        error_out=False)
+    posts = pagination.items
+    prev = None
+    if pagination.has_prev:
+        prev = url_for('api.get_posts', page=page-1)
+    next = None
+    if pagination.has_next:
+        next = url_for('api.get_posts', page=page+1)
+    return jsonify({
+----------------------------------------
+
+Document 88:
+ID: bdfe83ce-f7ae-4b5c-be98-17ecea747df4
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\posts.py
+Contenu:
+return jsonify({
+        'posts': [post.to_json() for post in posts],
+        'prev': prev,
+        'next': next,
+        'count': pagination.total
+    })
+----------------------------------------
+
+Document 89:
+ID: 42b329b4-3ac5-428b-b526-741cb4165541
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\posts.py
+Contenu:
+@api.route('/posts/<int:id>')
+def get_post(id):
+    post = Post.query.get_or_404(id)
+    return jsonify(post.to_json())
+
+
+@api.route('/posts/', methods=['POST'])
+@permission_required(Permission.WRITE)
+def new_post():
+    post = Post.from_json(request.json)
+    post.author = g.current_user
+    db.session.add(post)
+    db.session.commit()
+    return jsonify(post.to_json()), 201, \
+        {'Location': url_for('api.get_post', id=post.id)}
+----------------------------------------
+
+Document 90:
+ID: 963f05a0-378f-4a83-9e87-ad3344eec7d2
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\posts.py
+Contenu:
+@api.route('/posts/<int:id>', methods=['PUT'])
+@permission_required(Permission.WRITE)
+def edit_post(id):
+    post = Post.query.get_or_404(id)
+    if g.current_user != post.author and \
+            not g.current_user.can(Permission.ADMIN):
+        return forbidden('Insufficient permissions')
+    post.body = request.json.get('body', post.body)
+    db.session.add(post)
+    db.session.commit()
+    return jsonify(post.to_json())
+----------------------------------------
+
+Document 91:
+ID: b4badf8d-df8a-4137-9425-aeb19ec00060
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\users.py
+Contenu:
+from flask import jsonify, request, current_app, url_for
+from . import api
+from ..models import User, Post
+
+
+@api.route('/users/<int:id>')
+def get_user(id):
+    user = User.query.get_or_404(id)
+    return jsonify(user.to_json())
+----------------------------------------
+
+Document 92:
+ID: 09cff025-2dae-4b46-b2d7-825ae62fb165
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\users.py
+Contenu:
+@api.route('/users/<int:id>/posts/')
+def get_user_posts(id):
+    user = User.query.get_or_404(id)
+    page = request.args.get('page', 1, type=int)
+    pagination = user.posts.order_by(Post.timestamp.desc()).paginate(
+        page=page, per_page=current_app.config['FLASKY_POSTS_PER_PAGE'],
+        error_out=False)
+    posts = pagination.items
+    prev = None
+    if pagination.has_prev:
+        prev = url_for('api.get_user_posts', id=id, page=page-1)
+    next = None
+    if pagination.has_next:
+----------------------------------------
+
+Document 93:
+ID: 3a8bf94e-25fc-4c3a-b330-98b137e3bf0a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\users.py
+Contenu:
+next = None
+    if pagination.has_next:
+        next = url_for('api.get_user_posts', id=id, page=page+1)
+    return jsonify({
+        'posts': [post.to_json() for post in posts],
+        'prev': prev,
+        'next': next,
+        'count': pagination.total
+    })
+----------------------------------------
+
+Document 94:
+ID: 8fc9302f-a679-4021-8284-30e3d86bfbb1
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\users.py
+Contenu:
+@api.route('/users/<int:id>/timeline/')
+def get_user_followed_posts(id):
+    user = User.query.get_or_404(id)
+    page = request.args.get('page', 1, type=int)
+    pagination = user.followed_posts.order_by(Post.timestamp.desc()).paginate(
+        page=page, per_page=current_app.config['FLASKY_POSTS_PER_PAGE'],
+        error_out=False)
+    posts = pagination.items
+    prev = None
+    if pagination.has_prev:
+        prev = url_for('api.get_user_followed_posts', id=id, page=page-1)
+----------------------------------------
+
+Document 95:
+ID: 995af70c-81de-48d6-ada3-3683dfb4d429
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\users.py
+Contenu:
+next = None
+    if pagination.has_next:
+        next = url_for('api.get_user_followed_posts', id=id, page=page+1)
+    return jsonify({
+        'posts': [post.to_json() for post in posts],
+        'prev': prev,
+        'next': next,
+        'count': pagination.total
+    })
+----------------------------------------
+
+Document 96:
+ID: 61b28cad-eacb-4538-b39c-19f649bfa665
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\api\__init__.py
+Contenu:
+from flask import Blueprint
+
+api = Blueprint('api', __name__)
+
+from . import authentication, posts, users, comments, errors
+----------------------------------------
+
+Document 97:
+ID: f474b59c-255b-4fe5-aca4-d023a7ce3006
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\forms.py
+Contenu:
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms.validators import DataRequired, Length, Email, Regexp, EqualTo
+from wtforms import ValidationError
+from ..models import User
+----------------------------------------
+
+Document 98:
+ID: eebb4326-70cc-4e4c-aded-74954a32e5b7
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\forms.py
+Contenu:
+class LoginForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Length(1, 64),
+                                             Email()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    remember_me = BooleanField('Keep me logged in')
+    submit = SubmitField('Log In')
+----------------------------------------
+
+Document 99:
+ID: be6e73e8-4439-416f-8ead-9a27a6bd5d30
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\forms.py
+Contenu:
+class RegistrationForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Length(1, 64),
+                                             Email()])
+    username = StringField('Username', validators=[
+        DataRequired(), Length(1, 64),
+        Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0,
+               'Usernames must have only letters, numbers, dots or '
+               'underscores')])
+    password = PasswordField('Password', validators=[
+----------------------------------------
+
+Document 100:
+ID: a05cb4b3-b13c-40ee-a485-524f7137e839
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\forms.py
+Contenu:
+DataRequired(), EqualTo('password2', message='Passwords must match.')])
+    password2 = PasswordField('Confirm password', validators=[DataRequired()])
+    submit = SubmitField('Register')
+----------------------------------------
+
+Document 101:
+ID: b9a244ba-a740-4d44-a41e-0cd8f0ac5864
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\forms.py
+Contenu:
+def validate_email(self, field):
+        if User.query.filter_by(email=field.data.lower()).first():
+            raise ValidationError('Email already registered.')
+
+    def validate_username(self, field):
+        if User.query.filter_by(username=field.data).first():
+            raise ValidationError('Username already in use.')
+----------------------------------------
+
+Document 102:
+ID: 089cbc34-7c9a-406f-b037-a7b67408b6a0
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\forms.py
+Contenu:
+class ChangePasswordForm(FlaskForm):
+    old_password = PasswordField('Old password', validators=[DataRequired()])
+    password = PasswordField('New password', validators=[
+        DataRequired(), EqualTo('password2', message='Passwords must match.')])
+    password2 = PasswordField('Confirm new password',
+                              validators=[DataRequired()])
+    submit = SubmitField('Update Password')
+----------------------------------------
+
+Document 103:
+ID: 249530d2-25dd-47d9-96c7-02f33d087a3a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\forms.py
+Contenu:
+class PasswordResetRequestForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Length(1, 64),
+                                             Email()])
+    submit = SubmitField('Reset Password')
+----------------------------------------
+
+Document 104:
+ID: 81758dcd-a310-438d-9f34-0a8b84f36515
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\forms.py
+Contenu:
+class PasswordResetForm(FlaskForm):
+    password = PasswordField('New Password', validators=[
+        DataRequired(), EqualTo('password2', message='Passwords must match')])
+    password2 = PasswordField('Confirm password', validators=[DataRequired()])
+    submit = SubmitField('Reset Password')
+----------------------------------------
+
+Document 105:
+ID: 597b0750-4c5e-4b88-8854-63e9bfb06be7
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\forms.py
+Contenu:
+class ChangeEmailForm(FlaskForm):
+    email = StringField('New Email', validators=[DataRequired(), Length(1, 64),
+                                                 Email()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Update Email Address')
+
+    def validate_email(self, field):
+        if User.query.filter_by(email=field.data.lower()).first():
+            raise ValidationError('Email already registered.')
+----------------------------------------
+
+Document 106:
+ID: 37962940-5feb-49e2-acc9-9af8ede4ff06
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+from flask import render_template, redirect, request, url_for, flash
+from flask_login import login_user, logout_user, login_required, \
+    current_user
+from . import auth
+from .. import db
+from ..models import User
+from ..email import send_email
+from .forms import LoginForm, RegistrationForm, ChangePasswordForm,\
+    PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm
+----------------------------------------
+
+Document 107:
+ID: 61574846-acf1-4e24-aec3-4574ce6183e5
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.before_app_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.ping()
+        if not current_user.confirmed \
+                and request.endpoint \
+                and request.blueprint != 'auth' \
+                and request.endpoint != 'static':
+            return redirect(url_for('auth.unconfirmed'))
+----------------------------------------
+
+Document 108:
+ID: 6e88f18e-a3ae-4e1a-b898-92ae154633eb
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.route('/unconfirmed')
+def unconfirmed():
+    if current_user.is_anonymous or current_user.confirmed:
+        return redirect(url_for('main.index'))
+    return render_template('auth/unconfirmed.html')
+----------------------------------------
+
+Document 109:
+ID: e3d191fe-fa2d-4cb2-a08e-c3773e7da62c
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data.lower()).first()
+        if user is not None and user.verify_password(form.password.data):
+            login_user(user, form.remember_me.data)
+            next = request.args.get('next')
+            if next is None or not next.startswith('/'):
+                next = url_for('main.index')
+            return redirect(next)
+----------------------------------------
+
+Document 110:
+ID: 4168ba4c-b18c-4d5e-ae6b-a1b49c0b617f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+return redirect(next)
+        flash('Invalid email or password.')
+    return render_template('auth/login.html', form=form)
+----------------------------------------
+
+Document 111:
+ID: fcf79172-47bc-4eb4-8b11-96ae30860341
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out.')
+    return redirect(url_for('main.index'))
+----------------------------------------
+
+Document 112:
+ID: 935478d7-f9ad-49fe-8f62-cfdefe9e8710
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(email=form.email.data.lower(),
+                    username=form.username.data,
+                    password=form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        token = user.generate_confirmation_token()
+        send_email(user.email, 'Confirm Your Account',
+----------------------------------------
+
+Document 113:
+ID: ce6ee008-281b-423f-9e24-e57276a90c0d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+'auth/email/confirm', user=user, token=token)
+        flash('A confirmation email has been sent to you by email.')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/register.html', form=form)
+----------------------------------------
+
+Document 114:
+ID: ef38e720-a538-4972-947a-d05d7d3276ab
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.route('/confirm/<token>')
+@login_required
+def confirm(token):
+    if current_user.confirmed:
+        return redirect(url_for('main.index'))
+    if current_user.confirm(token):
+        db.session.commit()
+        flash('You have confirmed your account. Thanks!')
+    else:
+        flash('The confirmation link is invalid or has expired.')
+    return redirect(url_for('main.index'))
+----------------------------------------
+
+Document 115:
+ID: 4d3b3a9a-6369-4f83-afa9-97d0bde12983
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.route('/confirm')
+@login_required
+def resend_confirmation():
+    token = current_user.generate_confirmation_token()
+    send_email(current_user.email, 'Confirm Your Account',
+               'auth/email/confirm', user=current_user, token=token)
+    flash('A new confirmation email has been sent to you by email.')
+    return redirect(url_for('main.index'))
+----------------------------------------
+
+Document 116:
+ID: da439cdc-ae99-464b-b92b-85d0956934df
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        if current_user.verify_password(form.old_password.data):
+            current_user.password = form.password.data
+            db.session.add(current_user)
+            db.session.commit()
+            flash('Your password has been updated.')
+            return redirect(url_for('main.index'))
+        else:
+----------------------------------------
+
+Document 117:
+ID: 0a9689cb-46a2-45c8-9bcc-393a412442a1
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+else:
+            flash('Invalid password.')
+    return render_template("auth/change_password.html", form=form)
+----------------------------------------
+
+Document 118:
+ID: ce7ffb6a-8b3b-42e4-ac23-df34ee7716c4
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.route('/reset', methods=['GET', 'POST'])
+def password_reset_request():
+    if not current_user.is_anonymous:
+        return redirect(url_for('main.index'))
+    form = PasswordResetRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data.lower()).first()
+        if user:
+            token = user.generate_reset_token()
+            send_email(user.email, 'Reset Your Password',
+                       'auth/email/reset_password',
+----------------------------------------
+
+Document 119:
+ID: 4765a27a-10fa-4538-84a8-1b2a7768db4f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+user=user, token=token)
+        flash('An email with instructions to reset your password has been '
+              'sent to you.')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/reset_password.html', form=form)
+----------------------------------------
+
+Document 120:
+ID: 9ec8532d-0534-40ed-9d94-7cabd5c1809c
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.route('/reset/<token>', methods=['GET', 'POST'])
+def password_reset(token):
+    if not current_user.is_anonymous:
+        return redirect(url_for('main.index'))
+    form = PasswordResetForm()
+    if form.validate_on_submit():
+        if User.reset_password(token, form.password.data):
+            db.session.commit()
+            flash('Your password has been updated.')
+            return redirect(url_for('auth.login'))
+        else:
+            return redirect(url_for('main.index'))
+----------------------------------------
+
+Document 121:
+ID: fee3b77b-6715-448a-9bdf-816d1623ea40
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+return render_template('auth/reset_password.html', form=form)
+----------------------------------------
+
+Document 122:
+ID: a0deb5ea-836f-4970-85e0-49877aaed25d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.route('/change_email', methods=['GET', 'POST'])
+@login_required
+def change_email_request():
+    form = ChangeEmailForm()
+    if form.validate_on_submit():
+        if current_user.verify_password(form.password.data):
+            new_email = form.email.data.lower()
+            token = current_user.generate_email_change_token(new_email)
+            send_email(new_email, 'Confirm your email address',
+                       'auth/email/change_email',
+----------------------------------------
+
+Document 123:
+ID: d295e8ac-e934-4b4a-a337-3c27ac413497
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+'auth/email/change_email',
+                       user=current_user, token=token)
+            flash('An email with instructions to confirm your new email '
+                  'address has been sent to you.')
+            return redirect(url_for('main.index'))
+        else:
+            flash('Invalid email or password.')
+    return render_template("auth/change_email.html", form=form)
+----------------------------------------
+
+Document 124:
+ID: db6262a5-589f-46a6-9bf1-8fa647b5c905
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\views.py
+Contenu:
+@auth.route('/change_email/<token>')
+@login_required
+def change_email(token):
+    if current_user.change_email(token):
+        db.session.commit()
+        flash('Your email address has been updated.')
+    else:
+        flash('Invalid request.')
+    return redirect(url_for('main.index'))
+----------------------------------------
+
+Document 125:
+ID: c0e33e43-d269-4c63-9904-6c2d3dea2813
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\auth\__init__.py
+Contenu:
+from flask import Blueprint
+
+auth = Blueprint('auth', __name__)
+
+from . import views
+----------------------------------------
+
+Document 126:
+ID: 81e2ab65-3586-42e5-8ecc-599cf44ffe1f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\errors.py
+Contenu:
+from flask import render_template, request, jsonify
+from . import main
+
+
+@main.app_errorhandler(403)
+def forbidden(e):
+    if request.accept_mimetypes.accept_json and \
+            not request.accept_mimetypes.accept_html:
+        response = jsonify({'error': 'forbidden'})
+        response.status_code = 403
+        return response
+    return render_template('403.html'), 403
+----------------------------------------
+
+Document 127:
+ID: b7400e9e-f387-4a79-bbcf-ce942e1662c9
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\errors.py
+Contenu:
+@main.app_errorhandler(404)
+def page_not_found(e):
+    if request.accept_mimetypes.accept_json and \
+            not request.accept_mimetypes.accept_html:
+        response = jsonify({'error': 'not found'})
+        response.status_code = 404
+        return response
+    return render_template('404.html'), 404
+----------------------------------------
+
+Document 128:
+ID: b7e5e2ad-67a7-4746-9ad4-b19cd0614ae0
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\errors.py
+Contenu:
+@main.app_errorhandler(500)
+def internal_server_error(e):
+    if request.accept_mimetypes.accept_json and \
+            not request.accept_mimetypes.accept_html:
+        response = jsonify({'error': 'internal server error'})
+        response.status_code = 500
+        return response
+    return render_template('500.html'), 500
+----------------------------------------
+
+Document 129:
+ID: a072f8c6-e5f1-4fe7-b087-b0ad20fdace2
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\forms.py
+Contenu:
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField, BooleanField, SelectField,\
+    SubmitField
+from wtforms.validators import DataRequired, Length, Email, Regexp
+from wtforms import ValidationError
+from flask_pagedown.fields import PageDownField
+from ..models import Role, User
+
+
+class NameForm(FlaskForm):
+    name = StringField('What is your name?', validators=[DataRequired()])
+    submit = SubmitField('Submit')
+----------------------------------------
+
+Document 130:
+ID: 384d0098-2171-4b7d-883b-64c4de966e22
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\forms.py
+Contenu:
+class EditProfileForm(FlaskForm):
+    name = StringField('Real name', validators=[Length(0, 64)])
+    location = StringField('Location', validators=[Length(0, 64)])
+    about_me = TextAreaField('About me')
+    submit = SubmitField('Submit')
+----------------------------------------
+
+Document 131:
+ID: cc3b70eb-fe14-4011-8402-af0e0a1cd157
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\forms.py
+Contenu:
+class EditProfileAdminForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Length(1, 64),
+                                             Email()])
+    username = StringField('Username', validators=[
+        DataRequired(), Length(1, 64),
+        Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0,
+               'Usernames must have only letters, numbers, dots or '
+               'underscores')])
+    confirmed = BooleanField('Confirmed')
+    role = SelectField('Role', coerce=int)
+----------------------------------------
+
+Document 132:
+ID: eba74031-0b9f-404b-9c86-aa02c811eb6e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\forms.py
+Contenu:
+role = SelectField('Role', coerce=int)
+    name = StringField('Real name', validators=[Length(0, 64)])
+    location = StringField('Location', validators=[Length(0, 64)])
+    about_me = TextAreaField('About me')
+    submit = SubmitField('Submit')
+----------------------------------------
+
+Document 133:
+ID: 6269c6c5-6157-46d8-9722-4c58c99b74da
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\forms.py
+Contenu:
+def __init__(self, user, *args, **kwargs):
+        super(EditProfileAdminForm, self).__init__(*args, **kwargs)
+        self.role.choices = [(role.id, role.name)
+                             for role in Role.query.order_by(Role.name).all()]
+        self.user = user
+
+    def validate_email(self, field):
+        if field.data != self.user.email and \
+                User.query.filter_by(email=field.data).first():
+            raise ValidationError('Email already registered.')
+----------------------------------------
+
+Document 134:
+ID: 2de87b73-c6ad-4ceb-951e-89d9b5325cc9
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\forms.py
+Contenu:
+def validate_username(self, field):
+        if field.data != self.user.username and \
+                User.query.filter_by(username=field.data).first():
+            raise ValidationError('Username already in use.')
+
+
+class PostForm(FlaskForm):
+    body = PageDownField("What's on your mind?", validators=[DataRequired()])
+    submit = SubmitField('Submit')
+----------------------------------------
+
+Document 135:
+ID: 0f42af07-c421-4d77-81ff-e6e52cc876ca
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\forms.py
+Contenu:
+class CommentForm(FlaskForm):
+    body = StringField('Enter your comment', validators=[DataRequired()])
+    submit = SubmitField('Submit')
+----------------------------------------
+
+Document 136:
+ID: 5cefdd22-d972-41ad-bb08-38087000cf7e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+from flask import render_template, redirect, url_for, abort, flash, request,\
+    current_app, make_response
+from flask_login import login_required, current_user
+from flask_sqlalchemy import get_debug_queries
+from . import main
+from .forms import EditProfileForm, EditProfileAdminForm, PostForm,\
+    CommentForm
+from .. import db
+from ..models import Permission, Role, User, Post, Comment
+from ..decorators import admin_required, permission_required
+----------------------------------------
+
+Document 137:
+ID: 002b54a6-4583-4259-8381-cf8b6e6a2906
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.after_app_request
+def after_request(response):
+    for query in get_debug_queries():
+        if query.duration >= current_app.config['FLASKY_SLOW_DB_QUERY_TIME']:
+            current_app.logger.warning(
+                'Slow query: %s\nParameters: %s\nDuration: %fs\nContext: %s\n'
+                % (query.statement, query.parameters, query.duration,
+                   query.context))
+    return response
+----------------------------------------
+
+Document 138:
+ID: 3f9e3924-bfcb-4fdb-91c6-ed0e7749f542
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/shutdown')
+def server_shutdown():
+    if not current_app.testing:
+        abort(404)
+    shutdown = request.environ.get('werkzeug.server.shutdown')
+    if not shutdown:
+        abort(500)
+    shutdown()
+    return 'Shutting down...'
+----------------------------------------
+
+Document 139:
+ID: 1571a25d-afdd-4334-b72c-82e9550651b8
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/', methods=['GET', 'POST'])
+def index():
+    form = PostForm()
+    if current_user.can(Permission.WRITE) and form.validate_on_submit():
+        post = Post(body=form.body.data,
+                    author=current_user._get_current_object())
+        db.session.add(post)
+        db.session.commit()
+        return redirect(url_for('.index'))
+    page = request.args.get('page', 1, type=int)
+    show_followed = False
+    if current_user.is_authenticated:
+----------------------------------------
+
+Document 140:
+ID: 9c16b2a8-04a5-49c6-b584-ac7c7db50ee2
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+if current_user.is_authenticated:
+        show_followed = bool(request.cookies.get('show_followed', ''))
+    if show_followed:
+        query = current_user.followed_posts
+    else:
+        query = Post.query
+    pagination = query.order_by(Post.timestamp.desc()).paginate(
+        page=page, per_page=current_app.config['FLASKY_POSTS_PER_PAGE'],
+        error_out=False)
+    posts = pagination.items
+    return render_template('index.html', form=form, posts=posts,
+----------------------------------------
+
+Document 141:
+ID: 939ff35e-75f4-4368-a814-777cab646582
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+show_followed=show_followed, pagination=pagination)
+----------------------------------------
+
+Document 142:
+ID: 0f93a2db-33f4-4706-a3d4-934b23acba70
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/user/<username>')
+def user(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    pagination = user.posts.order_by(Post.timestamp.desc()).paginate(
+        page=page, per_page=current_app.config['FLASKY_POSTS_PER_PAGE'],
+        error_out=False)
+    posts = pagination.items
+    return render_template('user.html', user=user, posts=posts,
+                           pagination=pagination)
+----------------------------------------
+
+Document 143:
+ID: 9a7fd008-f37c-431a-a84c-56e69e106612
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/edit-profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    form = EditProfileForm()
+    if form.validate_on_submit():
+        current_user.name = form.name.data
+        current_user.location = form.location.data
+        current_user.about_me = form.about_me.data
+        db.session.add(current_user._get_current_object())
+        db.session.commit()
+        flash('Your profile has been updated.')
+----------------------------------------
+
+Document 144:
+ID: 7dd20684-eddb-4c7c-85af-d9e419df0e48
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+flash('Your profile has been updated.')
+        return redirect(url_for('.user', username=current_user.username))
+    form.name.data = current_user.name
+    form.location.data = current_user.location
+    form.about_me.data = current_user.about_me
+    return render_template('edit_profile.html', form=form)
+----------------------------------------
+
+Document 145:
+ID: 8d858d22-c942-4eec-b889-cd474143acaf
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/edit-profile/<int:id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_profile_admin(id):
+    user = User.query.get_or_404(id)
+    form = EditProfileAdminForm(user=user)
+    if form.validate_on_submit():
+        user.email = form.email.data
+        user.username = form.username.data
+        user.confirmed = form.confirmed.data
+        user.role = Role.query.get(form.role.data)
+        user.name = form.name.data
+        user.location = form.location.data
+----------------------------------------
+
+Document 146:
+ID: 49be39df-b2d7-4085-bcfb-7ab8192a3880
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+user.location = form.location.data
+        user.about_me = form.about_me.data
+        db.session.add(user)
+        db.session.commit()
+        flash('The profile has been updated.')
+        return redirect(url_for('.user', username=user.username))
+    form.email.data = user.email
+    form.username.data = user.username
+    form.confirmed.data = user.confirmed
+    form.role.data = user.role_id
+    form.name.data = user.name
+    form.location.data = user.location
+----------------------------------------
+
+Document 147:
+ID: 08a00d05-da58-4afd-b6ce-4dcd2299ef1b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+form.location.data = user.location
+    form.about_me.data = user.about_me
+    return render_template('edit_profile.html', form=form, user=user)
+----------------------------------------
+
+Document 148:
+ID: c878487f-bae4-4637-b272-97e01917dd04
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/post/<int:id>', methods=['GET', 'POST'])
+def post(id):
+    post = Post.query.get_or_404(id)
+    form = CommentForm()
+    if form.validate_on_submit():
+        comment = Comment(body=form.body.data,
+                          post=post,
+                          author=current_user._get_current_object())
+        db.session.add(comment)
+        db.session.commit()
+        flash('Your comment has been published.')
+        return redirect(url_for('.post', id=post.id, page=-1))
+----------------------------------------
+
+Document 149:
+ID: da54aa3c-2052-4a71-806c-aaf77fe43e97
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+page = request.args.get('page', 1, type=int)
+    if page == -1:
+        page = (post.comments.count() - 1) // \
+            current_app.config['FLASKY_COMMENTS_PER_PAGE'] + 1
+    pagination = post.comments.order_by(Comment.timestamp.asc()).paginate(
+        page=page, per_page=current_app.config['FLASKY_COMMENTS_PER_PAGE'],
+        error_out=False)
+    comments = pagination.items
+    return render_template('post.html', posts=[post], form=form,
+----------------------------------------
+
+Document 150:
+ID: 5197c1a7-28e9-4570-934e-4659f898bc0b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+comments=comments, pagination=pagination)
+----------------------------------------
+
+Document 151:
+ID: 37fd0f39-462e-4aa1-a104-b3564dd87efc
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit(id):
+    post = Post.query.get_or_404(id)
+    if current_user != post.author and \
+            not current_user.can(Permission.ADMIN):
+        abort(403)
+    form = PostForm()
+    if form.validate_on_submit():
+        post.body = form.body.data
+        db.session.add(post)
+        db.session.commit()
+        flash('The post has been updated.')
+        return redirect(url_for('.post', id=post.id))
+----------------------------------------
+
+Document 152:
+ID: c9208141-6bb1-4af7-857b-87e1aef0c30a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+form.body.data = post.body
+    return render_template('edit_post.html', form=form)
+----------------------------------------
+
+Document 153:
+ID: 6eac7fe6-3cee-4fc9-a7ea-a05a2eba44c3
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/follow/<username>')
+@login_required
+@permission_required(Permission.FOLLOW)
+def follow(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('Invalid user.')
+        return redirect(url_for('.index'))
+    if current_user.is_following(user):
+        flash('You are already following this user.')
+        return redirect(url_for('.user', username=username))
+    current_user.follow(user)
+    db.session.commit()
+----------------------------------------
+
+Document 154:
+ID: 28945f0d-a809-4443-9e88-da92cc9b2dbe
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+db.session.commit()
+    flash('You are now following %s.' % username)
+    return redirect(url_for('.user', username=username))
+----------------------------------------
+
+Document 155:
+ID: 24b2525a-81af-45af-8803-a13c9d82ff73
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/unfollow/<username>')
+@login_required
+@permission_required(Permission.FOLLOW)
+def unfollow(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('Invalid user.')
+        return redirect(url_for('.index'))
+    if not current_user.is_following(user):
+        flash('You are not following this user.')
+        return redirect(url_for('.user', username=username))
+    current_user.unfollow(user)
+    db.session.commit()
+----------------------------------------
+
+Document 156:
+ID: eaa8dbd0-7731-4538-b86c-d747710c8644
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+db.session.commit()
+    flash('You are not following %s anymore.' % username)
+    return redirect(url_for('.user', username=username))
+----------------------------------------
+
+Document 157:
+ID: 96ee7f9a-275d-481b-b782-4a0a7aca082a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/followers/<username>')
+def followers(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('Invalid user.')
+        return redirect(url_for('.index'))
+    page = request.args.get('page', 1, type=int)
+    pagination = user.followers.paginate(
+        page=page, per_page=current_app.config['FLASKY_FOLLOWERS_PER_PAGE'],
+        error_out=False)
+    follows = [{'user': item.follower, 'timestamp': item.timestamp}
+----------------------------------------
+
+Document 158:
+ID: 027e30df-9a60-49aa-b475-ec047da20a02
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+for item in pagination.items]
+    return render_template('followers.html', user=user, title="Followers of",
+                           endpoint='.followers', pagination=pagination,
+                           follows=follows)
+----------------------------------------
+
+Document 159:
+ID: b4fc6fd0-8265-44f2-a6e7-6b958744469b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/followed_by/<username>')
+def followed_by(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('Invalid user.')
+        return redirect(url_for('.index'))
+    page = request.args.get('page', 1, type=int)
+    pagination = user.followed.paginate(
+        page=page, per_page=current_app.config['FLASKY_FOLLOWERS_PER_PAGE'],
+        error_out=False)
+    follows = [{'user': item.followed, 'timestamp': item.timestamp}
+----------------------------------------
+
+Document 160:
+ID: 039c24f4-b8e7-4f4c-91f9-5a5c83fa919c
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+for item in pagination.items]
+    return render_template('followers.html', user=user, title="Followed by",
+                           endpoint='.followed_by', pagination=pagination,
+                           follows=follows)
+----------------------------------------
+
+Document 161:
+ID: b552933e-823b-449f-9ebd-12994a18dfac
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/all')
+@login_required
+def show_all():
+    resp = make_response(redirect(url_for('.index')))
+    resp.set_cookie('show_followed', '', max_age=30*24*60*60)
+    return resp
+
+
+@main.route('/followed')
+@login_required
+def show_followed():
+    resp = make_response(redirect(url_for('.index')))
+    resp.set_cookie('show_followed', '1', max_age=30*24*60*60)
+    return resp
+----------------------------------------
+
+Document 162:
+ID: 92d07adb-8958-4f13-8fc0-81a925d215a1
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/moderate')
+@login_required
+@permission_required(Permission.MODERATE)
+def moderate():
+    page = request.args.get('page', 1, type=int)
+    pagination = Comment.query.order_by(Comment.timestamp.desc()).paginate(
+        page=page, per_page=current_app.config['FLASKY_COMMENTS_PER_PAGE'],
+        error_out=False)
+    comments = pagination.items
+    return render_template('moderate.html', comments=comments,
+                           pagination=pagination, page=page)
+----------------------------------------
+
+Document 163:
+ID: cb87bffb-81ef-4ffe-a365-6a754d20a82e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/moderate/enable/<int:id>')
+@login_required
+@permission_required(Permission.MODERATE)
+def moderate_enable(id):
+    comment = Comment.query.get_or_404(id)
+    comment.disabled = False
+    db.session.add(comment)
+    db.session.commit()
+    return redirect(url_for('.moderate',
+                            page=request.args.get('page', 1, type=int)))
+----------------------------------------
+
+Document 164:
+ID: 8ae1ece6-0d22-4978-838c-dae1612ee7ad
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\views.py
+Contenu:
+@main.route('/moderate/disable/<int:id>')
+@login_required
+@permission_required(Permission.MODERATE)
+def moderate_disable(id):
+    comment = Comment.query.get_or_404(id)
+    comment.disabled = True
+    db.session.add(comment)
+    db.session.commit()
+    return redirect(url_for('.moderate',
+                            page=request.args.get('page', 1, type=int)))
+----------------------------------------
+
+Document 165:
+ID: 10dc3e8a-f9cd-4a4a-8d0a-f23b9d757c41
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\main\__init__.py
+Contenu:
+from flask import Blueprint
+
+main = Blueprint('main', __name__)
+
+from . import views, errors
+from ..models import Permission
+
+
+@main.app_context_processor
+def inject_permissions():
+    return dict(Permission=Permission)
+----------------------------------------
+
+Document 166:
+ID: 726d4411-e54b-4981-bb98-e1445f075d4c
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\static\styles.css
+Contenu:
+.profile-thumbnail {
+    position: absolute;
+}
+.profile-header {
+    min-height: 260px;
+    margin-left: 280px;
+}
+div.post-tabs {
+    margin-top: 16px;
+}
+ul.posts {
+    list-style-type: none;
+    padding: 0px;
+    margin: 16px 0px 0px 0px;
+    border-top: 1px solid #e0e0e0;
+}
+div.post-tabs ul.posts {
+    margin: 0px;
+    border-top: none;
+}
+ul.posts li.post {
+    padding: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+ul.posts li.post:hover {
+    background-color: #f0f0f0;
+}
+div.post-date {
+----------------------------------------
+
+Document 167:
+ID: c596036a-90d9-40f6-908f-ddc9666b47ce
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\static\styles.css
+Contenu:
+background-color: #f0f0f0;
+}
+div.post-date {
+    float: right;
+}
+div.post-author {
+    font-weight: bold;
+}
+div.post-thumbnail {
+    position: absolute;
+}
+div.post-content {
+    margin-left: 48px;
+    min-height: 48px;
+}
+div.post-footer {
+    text-align: right;
+}
+ul.comments {
+    list-style-type: none;
+    padding: 0px;
+    margin: 16px 0px 0px 0px;
+}
+ul.comments li.comment {
+    margin-left: 32px;
+    padding: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+----------------------------------------
+
+Document 168:
+ID: 2d6a0e52-597e-4d69-ac67-4e9b6923dd7e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\static\styles.css
+Contenu:
+border-bottom: 1px solid #e0e0e0;
+}
+ul.comments li.comment:nth-child(1) {
+    border-top: 1px solid #e0e0e0;
+}
+ul.comments li.comment:hover {
+    background-color: #f0f0f0;
+}
+div.comment-date {
+    float: right;
+}
+div.comment-author {
+    font-weight: bold;
+}
+div.comment-thumbnail {
+    position: absolute;
+}
+div.comment-content {
+    margin-left: 48px;
+    min-height: 48px;
+}
+div.comment-form {
+    margin: 16px 0px 16px 32px;
+}
+div.pagination {
+    width: 100%;
+    text-align: right;
+----------------------------------------
+
+Document 169:
+ID: e364dd8e-5376-4915-9b09-114b22e0f1cd
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\static\styles.css
+Contenu:
+width: 100%;
+    text-align: right;
+    padding: 0px;
+    margin: 0px;
+}
+div.flask-pagedown-preview {
+    margin: 10px 0px 10px 0px;
+    border: 1px solid #e0e0e0;
+    padding: 4px;
+}
+div.flask-pagedown-preview h1 {
+    font-size: 140%;
+}
+div.flask-pagedown-preview h2 {
+    font-size: 130%;
+}
+div.flask-pagedown-preview h3 {
+    font-size: 120%;
+}
+.post-body h1 {
+    font-size: 140%;
+}
+.post-body h2 {
+    font-size: 130%;
+}
+.post-body h3 {
+    font-size: 120%;
+}
+.table.followers tr {
+----------------------------------------
+
+Document 170:
+ID: 62aef58b-2466-4334-956a-2927e90a2193
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\static\styles.css
+Contenu:
+font-size: 120%;
+}
+.table.followers tr {
+    border-bottom: 1px solid #e0e0e0;
+}
+----------------------------------------
+
+Document 171:
+ID: 6964c595-560a-49d0-846c-9dbcb057d4a4
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\403.html
+Contenu:
+{% extends "base.html" %}
+
+{% block title %}Flasky - Forbidden{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Forbidden</h1>
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 172:
+ID: d6cc4902-ab4f-407a-9ebd-c3e44f4da15a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\404.html
+Contenu:
+{% extends "base.html" %}
+
+{% block title %}Flasky - Page Not Found{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Not Found</h1>
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 173:
+ID: c655cf44-4368-452a-8860-bbf4879964a6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\500.html
+Contenu:
+{% extends "base.html" %}
+
+{% block title %}Flasky - Internal Server Error{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Internal Server Error</h1>
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 174:
+ID: 7e02d561-d89a-41fb-b8c3-c321cfcc0337
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\base.html
+Contenu:
+{% extends "bootstrap/base.html" %}
+
+{% block title %}Flasky{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+{% endblock %}
+----------------------------------------
+
+Document 175:
+ID: 742b4b00-1419-450a-8867-353f3bb88777
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\base.html
+Contenu:
+{% block navbar %}
+<div class="navbar navbar-inverse" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+----------------------------------------
+
+Document 176:
+ID: e92fadb5-3459-4076-9e27-b55ccc2461d3
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\base.html
+Contenu:
+</button>
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">Flasky</a>
+        </div>
+        <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li><a href="{{ url_for('main.index') }}">Home</a></li>
+                {% if current_user.is_authenticated %}
+                <li><a href="{{ url_for('main.user', username=current_user.username) }}">Profile</a></li>
+                {% endif %}
+            </ul>
+----------------------------------------
+
+Document 177:
+ID: f3125165-7c0d-4a5b-8f5f-df86a75fef3b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\base.html
+Contenu:
+{% endif %}
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                {% if current_user.can(Permission.MODERATE) %}
+                <li><a href="{{ url_for('main.moderate') }}">Moderate Comments</a></li>
+                {% endif %}
+                {% if current_user.is_authenticated %}
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+----------------------------------------
+
+Document 178:
+ID: 6ffb5ccf-30ac-42a0-bf2e-1a53df216c49
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\base.html
+Contenu:
+<img src="{{ current_user.gravatar(size=18) }}">
+                        Account <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="{{ url_for('auth.change_password') }}">Change Password</a></li>
+                        <li><a href="{{ url_for('auth.change_email_request') }}">Change Email</a></li>
+                        <li><a href="{{ url_for('auth.logout') }}">Log Out</a></li>
+----------------------------------------
+
+Document 179:
+ID: 8ec1be42-ca6a-4ff6-a16d-47f31357ab2b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\base.html
+Contenu:
+</ul>
+                </li>
+                {% else %}
+                <li><a href="{{ url_for('auth.login') }}">Log In</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 180:
+ID: ee6af113-d0f9-4412-ad90-ee3409077773
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\base.html
+Contenu:
+{% block content %}
+<div class="container">
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        {{ message }}
+    </div>
+    {% endfor %}
+
+    {% block page_content %}{% endblock %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{{ moment.include_moment() }}
+{% endblock %}
+----------------------------------------
+
+Document 181:
+ID: ac47ae8e-400f-49a9-960c-0a9fdb8d7b5c
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\edit_post.html
+Contenu:
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Flasky - Edit Post{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Edit Post</h1>
+</div>
+<div>
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{{ pagedown.include_pagedown() }}
+{% endblock %}
+----------------------------------------
+
+Document 182:
+ID: 07ff890c-12f2-43ab-90e0-6c5f4d27c30d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\edit_profile.html
+Contenu:
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Flasky - Edit Profile{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Edit Your Profile</h1>
+</div>
+<div class="col-md-4">
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 183:
+ID: 057c2354-a2ab-49dd-a139-a461d48e33d6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\followers.html
+Contenu:
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Flasky - {{ title }} {{ user.username }}{% endblock %}
+----------------------------------------
+
+Document 184:
+ID: 32e2519e-7791-482c-9dd7-18b76490adde
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\followers.html
+Contenu:
+{% block page_content %}
+<div class="page-header">
+    <h1>{{ title }} {{ user.username }}</h1>
+</div>
+<table class="table table-hover followers">
+    <thead><tr><th>User</th><th>Since</th></tr></thead>
+    {% for follow in follows %}
+    {% if follow.user != user %}
+    <tr>
+        <td>
+            <a href="{{ url_for('.user', username = follow.user.username) }}">
+                <img class="img-rounded" src="{{ follow.user.gravatar(size=32) }}">
+                {{ follow.user.username }}
+----------------------------------------
+
+Document 185:
+ID: f1b56a09-1085-4d95-b2f1-8b0d844dbc2b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\followers.html
+Contenu:
+{{ follow.user.username }}
+            </a>
+        </td>
+        <td>{{ moment(follow.timestamp).format('L') }}</td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+</table>
+<div class="pagination">
+    {{ macros.pagination_widget(pagination, endpoint, username = user.username) }}
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 186:
+ID: d6cf1fdf-10cd-4d29-b186-a849d1435135
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\index.html
+Contenu:
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Flasky{% endblock %}
+----------------------------------------
+
+Document 187:
+ID: 7400edfe-b000-466d-b4c4-6981ca028b7e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\index.html
+Contenu:
+{% block page_content %}
+<div class="page-header">
+    <h1>Hello, {% if current_user.is_authenticated %}{{ current_user.username }}{% else %}Stranger{% endif %}!</h1>
+</div>
+<div>
+    {% if current_user.can(Permission.WRITE) %}
+    {{ wtf.quick_form(form) }}
+    {% endif %}
+</div>
+<div class="post-tabs">
+    <ul class="nav nav-tabs">
+        <li{% if not show_followed %} class="active"{% endif %}><a href="{{ url_for('.show_all') }}">All</a></li>
+        {% if current_user.is_authenticated %}
+----------------------------------------
+
+Document 188:
+ID: ba4aa4e1-d32f-4263-94fa-cd634fde0ebb
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\index.html
+Contenu:
+{% if current_user.is_authenticated %}
+        <li{% if show_followed %} class="active"{% endif %}><a href="{{ url_for('.show_followed') }}">Followed</a></li>
+        {% endif %}
+    </ul>
+    {% include '_posts.html' %}
+</div>
+{% if pagination %}
+<div class="pagination">
+    {{ macros.pagination_widget(pagination, '.index') }}
+</div>
+{% endif %}
+{% endblock %}
+----------------------------------------
+
+Document 189:
+ID: a869f6fe-31f3-4950-a730-75329975d99f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\index.html
+Contenu:
+{% block scripts %}
+{{ super() }}
+{{ pagedown.include_pagedown() }}
+{% endblock %}
+----------------------------------------
+
+Document 190:
+ID: 7aa574cb-5ca6-47ab-a6c4-203531ee075d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\moderate.html
+Contenu:
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Flasky - Comment Moderation{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Comment Moderation</h1>
+</div>
+{% set moderate = True %}
+{% include '_comments.html' %}
+{% if pagination %}
+<div class="pagination">
+    {{ macros.pagination_widget(pagination, '.moderate') }}
+</div>
+{% endif %}
+{% endblock %}
+----------------------------------------
+
+Document 191:
+ID: e559c4f3-12ee-48c0-8471-dca3343ad73d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\post.html
+Contenu:
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Flasky - Post{% endblock %}
+----------------------------------------
+
+Document 192:
+ID: e8e17921-e5f0-4710-9eae-05322b9087b7
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\post.html
+Contenu:
+{% block title %}Flasky - Post{% endblock %}
+
+{% block page_content %}
+{% include '_posts.html' %}
+<h4 id="comments">Comments</h4>
+{% if current_user.can(Permission.COMMENT) %}
+<div class="comment-form">
+    {{ wtf.quick_form(form) }}
+</div>
+{% endif %}
+{% include '_comments.html' %}
+{% if pagination %}
+<div class="pagination">
+    {{ macros.pagination_widget(pagination, '.post', fragment='#comments', id=posts[0].id) }}
+</div>
+{% endif %}
+{% endblock %}
+----------------------------------------
+
+Document 193:
+ID: 363fea83-da82-42ad-a6d7-108434b8651c
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\user.html
+Contenu:
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Flasky - {{ user.username }}{% endblock %}
+----------------------------------------
+
+Document 194:
+ID: d9f7668c-4a78-4b30-a15d-2d20fabb5388
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\user.html
+Contenu:
+{% block page_content %}
+<div class="page-header">
+    <img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}">
+    <div class="profile-header">
+        <h1>{{ user.username }}</h1>
+        {% if user.name or user.location %}
+        <p>
+            {% if user.name %}{{ user.name }}<br>{% endif %}
+            {% if user.location %}
+                from <a href="http://maps.google.com/?q={{ user.location }}">{{ user.location }}</a><br>
+            {% endif %}
+        </p>
+----------------------------------------
+
+Document 195:
+ID: 4b78f0dc-3b6c-4c29-b651-d6e4c069ab76
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\user.html
+Contenu:
+{% endif %}
+        </p>
+        {% endif %}
+        {% if current_user.is_administrator() %}
+        <p><a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
+        {% endif %}
+        {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+        <p>Member since {{ moment(user.member_since).format('L') }}. Last seen {{ moment(user.last_seen).fromNow() }}.</p>
+        <p>{{ user.posts.count() }} blog posts. {{ user.comments.count() }} comments.</p>
+        <p>
+----------------------------------------
+
+Document 196:
+ID: 9e4bb0b1-6ea0-4743-8d7c-abe2f856f4d1
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\user.html
+Contenu:
+<p>
+            {% if current_user.can(Permission.FOLLOW) and user != current_user %}
+                {% if not current_user.is_following(user) %}
+                <a href="{{ url_for('.follow', username=user.username) }}" class="btn btn-primary">Follow</a>
+                {% else %}
+                <a href="{{ url_for('.unfollow', username=user.username) }}" class="btn btn-default">Unfollow</a>
+                {% endif %}
+            {% endif %}
+----------------------------------------
+
+Document 197:
+ID: 521d0e03-3b67-4570-aa57-92c9840b0113
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\user.html
+Contenu:
+{% endif %}
+            <a href="{{ url_for('.followers', username=user.username) }}">Followers: <span class="badge">{{ user.followers.count() - 1 }}</span></a>
+            <a href="{{ url_for('.followed_by', username=user.username) }}">Following: <span class="badge">{{ user.followed.count() - 1 }}</span></a>
+            {% if current_user.is_authenticated and user != current_user and user.is_following(current_user) %}
+----------------------------------------
+
+Document 198:
+ID: 4571ed60-67c6-4b48-9a90-1295e757a9a2
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\user.html
+Contenu:
+| <span class="label label-default">Follows you</span>
+            {% endif %}
+        </p>
+        <p>
+            {% if user == current_user %}
+            <a class="btn btn-default" href="{{ url_for('.edit_profile') }}">Edit Profile</a>
+            {% endif %}
+            {% if current_user.is_administrator() %}
+            <a class="btn btn-danger" href="{{ url_for('.edit_profile_admin', id=user.id) }}">Edit Profile [Admin]</a>
+            {% endif %}
+        </p>
+    </div>
+----------------------------------------
+
+Document 199:
+ID: 5d7d6cd0-827f-4e5f-9510-e02a5a36f9cd
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\user.html
+Contenu:
+{% endif %}
+        </p>
+    </div>
+</div>
+<h3>Posts by {{ user.username }}</h3>
+{% include '_posts.html' %}
+{% if pagination %}
+<div class="pagination">
+    {{ macros.pagination_widget(pagination, '.user', username=user.username) }}
+</div>
+{% endif %}
+{% endblock %}
+----------------------------------------
+
+Document 200:
+ID: 7108857e-5f93-4d4f-93df-fa30a5820925
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\_comments.html
+Contenu:
+<ul class="comments">
+    {% for comment in comments %}
+    <li class="comment">
+        <div class="comment-thumbnail">
+            <a href="{{ url_for('.user', username=comment.author.username) }}">
+                <img class="img-rounded profile-thumbnail" src="{{ comment.author.gravatar(size=40) }}">
+            </a>
+        </div>
+        <div class="comment-content">
+            <div class="comment-date">{{ moment(comment.timestamp).fromNow() }}</div>
+----------------------------------------
+
+Document 201:
+ID: 58d7076a-b8fe-44e5-b624-d641f0ae6622
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\_comments.html
+Contenu:
+<div class="comment-author"><a href="{{ url_for('.user', username=comment.author.username) }}">{{ comment.author.username }}</a></div>
+            <div class="comment-body">
+                {% if comment.disabled %}
+                <p><i>This comment has been disabled by a moderator.</i></p>
+                {% endif %}
+                {% if moderate or not comment.disabled %}
+                    {% if comment.body_html %}
+                        {{ comment.body_html | safe }}
+----------------------------------------
+
+Document 202:
+ID: a636e6a6-d551-4308-a730-1e5031757fd1
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\_comments.html
+Contenu:
+{% else %}
+                        {{ comment.body }}
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% if moderate %}
+                <br>
+                {% if comment.disabled %}
+                <a class="btn btn-default btn-xs" href="{{ url_for('.moderate_enable', id=comment.id, page=page) }}">Enable</a>
+                {% else %}
+----------------------------------------
+
+Document 203:
+ID: 4d448924-b86f-4589-881e-bc7dca695e08
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\_comments.html
+Contenu:
+{% else %}
+                <a class="btn btn-danger btn-xs" href="{{ url_for('.moderate_disable', id=comment.id, page=page) }}">Disable</a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+----------------------------------------
+
+Document 204:
+ID: 34d195d2-0019-40eb-abb4-013feb29b14a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\_macros.html
+Contenu:
+{% macro pagination_widget(pagination, endpoint, fragment='') %}
+<ul class="pagination">
+    <li{% if not pagination.has_prev %} class="disabled"{% endif %}>
+        <a href="{% if pagination.has_prev %}{{ url_for(endpoint, page=pagination.prev_num, **kwargs) }}{{ fragment }}{% else %}#{% endif %}">
+            &laquo;
+        </a>
+    </li>
+    {% for p in pagination.iter_pages() %}
+        {% if p %}
+            {% if p == pagination.page %}
+            <li class="active">
+----------------------------------------
+
+Document 205:
+ID: ca99ccc9-a2c1-47e7-8ca2-78aeb884df74
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\_macros.html
+Contenu:
+<li class="active">
+                <a href="{{ url_for(endpoint, page = p, **kwargs) }}{{ fragment }}">{{ p }}</a>
+            </li>
+            {% else %}
+            <li>
+                <a href="{{ url_for(endpoint, page = p, **kwargs) }}{{ fragment }}">{{ p }}</a>
+            </li>
+            {% endif %}
+        {% else %}
+        <li class="disabled"><a href="#">&hellip;</a></li>
+        {% endif %}
+    {% endfor %}
+----------------------------------------
+
+Document 206:
+ID: f37d8807-4bce-48bb-823a-b1fd5f0b2da9
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\_macros.html
+Contenu:
+{% endif %}
+    {% endfor %}
+    <li{% if not pagination.has_next %} class="disabled"{% endif %}>
+        <a href="{% if pagination.has_next %}{{ url_for(endpoint, page=pagination.next_num, **kwargs) }}{{ fragment }}{% else %}#{% endif %}">
+            &raquo;
+        </a>
+    </li>
+</ul>
+{% endmacro %}
+----------------------------------------
+
+Document 207:
+ID: 9cde2aea-85e2-4566-8c0e-1076b239b6f6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\_posts.html
+Contenu:
+<ul class="posts">
+    {% for post in posts %}
+    <li class="post">
+        <div class="post-thumbnail">
+            <a href="{{ url_for('.user', username=post.author.username) }}">
+                <img class="img-rounded profile-thumbnail" src="{{ post.author.gravatar(size=40) }}">
+            </a>
+        </div>
+        <div class="post-content">
+            <div class="post-date">{{ moment(post.timestamp).fromNow() }}</div>
+----------------------------------------
+
+Document 208:
+ID: 4a882205-839f-48f9-ab78-286a27c08764
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\_posts.html
+Contenu:
+<div class="post-author"><a href="{{ url_for('.user', username=post.author.username) }}">{{ post.author.username }}</a></div>
+            <div class="post-body">
+                {% if post.body_html %}
+                    {{ post.body_html | safe }}
+                {% else %}
+                    {{ post.body }}
+                {% endif %}
+            </div>
+            <div class="post-footer">
+                {% if current_user == post.author %}
+----------------------------------------
+
+Document 209:
+ID: bec5378c-5c33-4321-b75e-323ed65986ce
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\_posts.html
+Contenu:
+<a href="{{ url_for('.edit', id=post.id) }}">
+                    <span class="label label-primary">Edit</span>
+                </a>
+                {% elif current_user.is_administrator() %}
+                <a href="{{ url_for('.edit', id=post.id) }}">
+                    <span class="label label-danger">Edit [Admin]</span>
+                </a>
+                {% endif %}
+                <a href="{{ url_for('.post', id=post.id) }}">
+----------------------------------------
+
+Document 210:
+ID: ae36bfa3-c8e7-4381-90c7-eda5ff435c1d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\_posts.html
+Contenu:
+<span class="label label-default">Permalink</span>
+                </a>
+                <a href="{{ url_for('.post', id=post.id) }}#comments">
+                    <span class="label label-primary">{{ post.comments.count() }} Comments</span>
+                </a>
+            </div>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+----------------------------------------
+
+Document 211:
+ID: f5ce2dcb-667f-461b-87b3-e1422720362a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\change_email.html
+Contenu:
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Flasky - Change Email Address{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Change Your Email Address</h1>
+</div>
+<div class="col-md-4">
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 212:
+ID: d0120a4d-43ec-4a9e-9222-736c06c52b28
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\change_password.html
+Contenu:
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Flasky - Change Password{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Change Your Password</h1>
+</div>
+<div class="col-md-4">
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 213:
+ID: 3511b53a-71ab-4eac-9b7f-840b2696c336
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\login.html
+Contenu:
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Flasky - Login{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Login</h1>
+</div>
+<div class="col-md-4">
+    {{ wtf.quick_form(form) }}
+    <br>
+    <p>Forgot your password? <a href="{{ url_for('auth.password_reset_request') }}">Click here to reset it</a>.</p>
+    <p>New user? <a href="{{ url_for('auth.register') }}">Click here to register</a>.</p>
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 214:
+ID: 11f37e3d-0585-425c-8415-b79dbca4de54
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\register.html
+Contenu:
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Flasky - Register{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Register</h1>
+</div>
+<div class="col-md-4">
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 215:
+ID: 907c32ee-0321-4a84-8db3-10bb86f7f5f0
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\reset_password.html
+Contenu:
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Flasky - Password Reset{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Reset Your Password</h1>
+</div>
+<div class="col-md-4">
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 216:
+ID: f59522fa-8d32-4cc7-9dd6-2edd031ecbda
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\unconfirmed.html
+Contenu:
+{% extends "base.html" %}
+
+{% block title %}Flasky - Confirm your account{% endblock %}
+----------------------------------------
+
+Document 217:
+ID: 9dbd071b-da42-48d4-a997-36033add2e14
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\unconfirmed.html
+Contenu:
+{% block page_content %}
+<div class="page-header">
+    <h1>
+        Hello, {{ current_user.username }}!
+    </h1>
+    <h3>You have not confirmed your account yet.</h3>
+    <p>
+        Before you can access this site you need to confirm your account.
+        Check your inbox, you should have received an email with a confirmation link.
+    </p>
+    <p>
+        Need another confirmation email?
+        <a href="{{ url_for('auth.resend_confirmation') }}">Click here</a>
+    </p>
+</div>
+----------------------------------------
+
+Document 218:
+ID: 41278a26-2eb8-41d2-b100-57e6eafc0662
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\unconfirmed.html
+Contenu:
+</p>
+</div>
+{% endblock %}
+----------------------------------------
+
+Document 219:
+ID: 5867aad1-3669-4dd7-a2eb-ac6f784b321f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\email\change_email.html
+Contenu:
+<p>Dear {{ user.username }},</p>
+<p>To confirm your new email address <a href="{{ url_for('auth.change_email', token=token, _external=True) }}">click here</a>.</p>
+<p>Alternatively, you can paste the following link in your browser's address bar:</p>
+<p>{{ url_for('auth.change_email', token=token, _external=True) }}</p>
+<p>Sincerely,</p>
+<p>The Flasky Team</p>
+<p><small>Note: replies to this email address are not monitored.</small></p>
+----------------------------------------
+
+Document 220:
+ID: a677e88b-8550-415b-ab3e-c94ea81a7fee
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\email\change_email.txt
+Contenu:
+Dear {{ user.username }},
+
+To confirm your new email address click on the following link:
+
+{{ url_for('auth.change_email', token=token, _external=True) }}
+
+Sincerely,
+
+The Flasky Team
+
+Note: replies to this email address are not monitored.
+----------------------------------------
+
+Document 221:
+ID: 7c5679f1-998e-414c-939e-360121afc57e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\email\confirm.html
+Contenu:
+<p>Dear {{ user.username }},</p>
+<p>Welcome to <b>Flasky</b>!</p>
+<p>To confirm your account please <a href="{{ url_for('auth.confirm', token=token, _external=True) }}">click here</a>.</p>
+<p>Alternatively, you can paste the following link in your browser's address bar:</p>
+<p>{{ url_for('auth.confirm', token=token, _external=True) }}</p>
+<p>Sincerely,</p>
+<p>The Flasky Team</p>
+<p><small>Note: replies to this email address are not monitored.</small></p>
+----------------------------------------
+
+Document 222:
+ID: 1b835212-bd23-4635-9157-d8975665d758
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\email\confirm.txt
+Contenu:
+Dear {{ user.username }},
+
+Welcome to Flasky!
+
+To confirm your account please click on the following link:
+
+{{ url_for('auth.confirm', token=token, _external=True) }}
+
+Sincerely,
+
+The Flasky Team
+
+Note: replies to this email address are not monitored.
+----------------------------------------
+
+Document 223:
+ID: 7b16ed69-1312-4671-9097-8f9fd4bb9e0c
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\email\reset_password.html
+Contenu:
+<p>Dear {{ user.username }},</p>
+<p>To reset your password <a href="{{ url_for('auth.password_reset', token=token, _external=True) }}">click here</a>.</p>
+<p>Alternatively, you can paste the following link in your browser's address bar:</p>
+<p>{{ url_for('auth.password_reset', token=token, _external=True) }}</p>
+<p>If you have not requested a password reset simply ignore this message.</p>
+<p>Sincerely,</p>
+<p>The Flasky Team</p>
+----------------------------------------
+
+Document 224:
+ID: e0b0d92c-0b4d-4e23-be8d-d32de228a80e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\email\reset_password.html
+Contenu:
+<p>Sincerely,</p>
+<p>The Flasky Team</p>
+<p><small>Note: replies to this email address are not monitored.</small></p>
+----------------------------------------
+
+Document 225:
+ID: d038e4f5-d074-4005-9896-3661cef345c3
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\auth\email\reset_password.txt
+Contenu:
+Dear {{ user.username }},
+
+To reset your password click on the following link:
+
+{{ url_for('auth.password_reset', token=token, _external=True) }}
+
+If you have not requested a password reset simply ignore this message.
+
+Sincerely,
+
+The Flasky Team
+
+Note: replies to this email address are not monitored.
+----------------------------------------
+
+Document 226:
+ID: 884c2fbc-e3e9-4787-983c-cf58f985fa1d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\mail\new_user.html
+Contenu:
+User <b>{{ user.username }}</b> has joined.
+----------------------------------------
+
+Document 227:
+ID: ea8531f2-f44d-4482-b861-171610532c91
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\app\templates\mail\new_user.txt
+Contenu:
+User {{ user.username }} has joined.
+----------------------------------------
+
+Document 228:
+ID: 007eb95b-0672-4cdc-b5de-15bd58cf2d9f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\env.py
+Contenu:
+from __future__ import with_statement
+from alembic import context
+from sqlalchemy import engine_from_config, pool
+from logging.config import fileConfig
+
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
+config = context.config
+
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
+fileConfig(config.config_file_name)
+----------------------------------------
+
+Document 229:
+ID: 9339edb9-bc47-4fcb-b5b6-1d7ae0a7e00c
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\env.py
+Contenu:
+# add your model's MetaData object here
+# for 'autogenerate' support
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
+from flask import current_app
+config.set_main_option('sqlalchemy.url', current_app.config.get('SQLALCHEMY_DATABASE_URI'))
+target_metadata = current_app.extensions['migrate'].db.metadata
+
+# other values from the config, defined by the needs of env.py,
+# can be acquired:
+# my_important_option = config.get_main_option("my_important_option")
+# ... etc.
+----------------------------------------
+
+Document 230:
+ID: f6abf619-fc39-4218-bbf9-9cea4652523d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\env.py
+Contenu:
+def run_migrations_offline():
+    """Run migrations in 'offline' mode.
+
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+
+    Calls to context.execute() here emit the given string to the
+    script output.
+
+    """
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(url=url)
+----------------------------------------
+
+Document 231:
+ID: 7d3eaa3c-1ba2-4262-a256-fb68df78202f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\env.py
+Contenu:
+with context.begin_transaction():
+        context.run_migrations()
+
+def run_migrations_online():
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+    engine = engine_from_config(
+                config.get_section(config.config_ini_section),
+                prefix='sqlalchemy.',
+                poolclass=pool.NullPool)
+----------------------------------------
+
+Document 232:
+ID: 44a903b9-b9f6-497e-a0bd-a677e635274a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\env.py
+Contenu:
+connection = engine.connect()
+    context.configure(
+                connection=connection,
+                target_metadata=target_metadata
+                )
+
+    try:
+        with context.begin_transaction():
+            context.run_migrations()
+    finally:
+        connection.close()
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+----------------------------------------
+
+Document 233:
+ID: 6877740b-6c9d-4c9d-ab4c-3a79aa18463a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\190163627111_account_confirmation.py
+Contenu:
+"""account confirmation
+
+Revision ID: 190163627111
+Revises: 456a945560f6
+Create Date: 2013-12-29 02:58:45.577428
+
+"""
+
+# revision identifiers, used by Alembic.
+revision = '190163627111'
+down_revision = '456a945560f6'
+
+from alembic import op
+import sqlalchemy as sa
+
+
+def upgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.add_column('users', sa.Column('confirmed', sa.Boolean(), nullable=True))
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 234:
+ID: 847f9cf6-a9db-4764-b1b4-1847d8da71a3
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\190163627111_account_confirmation.py
+Contenu:
+def downgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.drop_column('users', 'confirmed')
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 235:
+ID: 3cc58575-0ab2-414e-ab5a-df31ff0553f9
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\198b0eebcf9_caching_of_avatar_hashes.py
+Contenu:
+"""caching of avatar hashes
+
+Revision ID: 198b0eebcf9
+Revises: d66f086b258
+Create Date: 2014-02-04 09:10:02.245503
+
+"""
+
+# revision identifiers, used by Alembic.
+revision = '198b0eebcf9'
+down_revision = 'd66f086b258'
+
+from alembic import op
+import sqlalchemy as sa
+
+
+def upgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.add_column('users', sa.Column('avatar_hash', sa.String(length=32), nullable=True))
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 236:
+ID: 5d0c05a2-f8b6-4131-9431-a3acc88d1658
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\198b0eebcf9_caching_of_avatar_hashes.py
+Contenu:
+def downgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.drop_column('users', 'avatar_hash')
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 237:
+ID: e24b8337-d27b-4808-947e-f1fcce12de19
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\1b966e7f4b9e_post_model.py
+Contenu:
+"""post model
+
+Revision ID: 1b966e7f4b9e
+Revises: 198b0eebcf9
+Create Date: 2013-12-31 00:00:14.700591
+
+"""
+
+# revision identifiers, used by Alembic.
+revision = '1b966e7f4b9e'
+down_revision = '198b0eebcf9'
+
+from alembic import op
+import sqlalchemy as sa
+----------------------------------------
+
+Document 238:
+ID: 6c275dc5-57aa-48c5-a9bf-745d47f53caa
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\1b966e7f4b9e_post_model.py
+Contenu:
+def upgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.create_table('posts',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('body', sa.Text(), nullable=True),
+    sa.Column('timestamp', sa.DateTime(), nullable=True),
+    sa.Column('author_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['author_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+----------------------------------------
+
+Document 239:
+ID: 551e392a-1fe3-4a0a-ac02-96e93fcff1c6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\1b966e7f4b9e_post_model.py
+Contenu:
+sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_posts_timestamp', 'posts', ['timestamp'], unique=False)
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 240:
+ID: a6cc1b13-81c1-42a6-a4da-dbd7bcb7e9b1
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\1b966e7f4b9e_post_model.py
+Contenu:
+def downgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index('ix_posts_timestamp', 'posts')
+    op.drop_table('posts')
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 241:
+ID: 85d952e4-aceb-4762-baf9-d93203cfc3cd
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\2356a38169ea_followers.py
+Contenu:
+"""followers
+
+Revision ID: 2356a38169ea
+Revises: 288cd3dc5a8
+Create Date: 2013-12-31 16:10:34.500006
+
+"""
+
+# revision identifiers, used by Alembic.
+revision = '2356a38169ea'
+down_revision = '288cd3dc5a8'
+
+from alembic import op
+import sqlalchemy as sa
+----------------------------------------
+
+Document 242:
+ID: cd14c41d-6688-4137-bbff-908dd3b2fdf6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\2356a38169ea_followers.py
+Contenu:
+def upgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.create_table('follows',
+    sa.Column('follower_id', sa.Integer(), nullable=False),
+    sa.Column('followed_id', sa.Integer(), nullable=False),
+    sa.Column('timestamp', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['followed_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['follower_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('follower_id', 'followed_id')
+    )
+----------------------------------------
+
+Document 243:
+ID: ada1f0a7-d16e-4d9d-869f-6d0f54135be6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\2356a38169ea_followers.py
+Contenu:
+)
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 244:
+ID: 971630e5-746c-4dac-9932-ae2050bc16cd
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\2356a38169ea_followers.py
+Contenu:
+def downgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.drop_table('follows')
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 245:
+ID: fad16511-f25e-4ef6-a972-6f7c9ad105bf
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\288cd3dc5a8_rich_text_posts.py
+Contenu:
+"""rich text posts
+
+Revision ID: 288cd3dc5a8
+Revises: 1b966e7f4b9e
+Create Date: 2013-12-31 03:25:13.286503
+
+"""
+
+# revision identifiers, used by Alembic.
+revision = '288cd3dc5a8'
+down_revision = '1b966e7f4b9e'
+
+from alembic import op
+import sqlalchemy as sa
+
+
+def upgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.add_column('posts', sa.Column('body_html', sa.Text(), nullable=True))
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 246:
+ID: 720c44fc-2745-4161-a95f-41f1bb16c238
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\288cd3dc5a8_rich_text_posts.py
+Contenu:
+def downgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.drop_column('posts', 'body_html')
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 247:
+ID: d4b43eff-528b-483d-ab3d-b353f6f87656
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\38c4e85512a9_initial_migration.py
+Contenu:
+"""initial migration
+
+Revision ID: 38c4e85512a9
+Revises: None
+Create Date: 2013-12-27 01:23:59.392801
+
+"""
+
+# revision identifiers, used by Alembic.
+revision = '38c4e85512a9'
+down_revision = None
+
+from alembic import op
+import sqlalchemy as sa
+----------------------------------------
+
+Document 248:
+ID: 6828b8a0-92bf-49b9-93da-09eadecdb4b9
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\38c4e85512a9_initial_migration.py
+Contenu:
+def upgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.create_table('roles',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(length=64), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name')
+    )
+    op.create_table('users',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('username', sa.String(length=64), nullable=True),
+    sa.Column('role_id', sa.Integer(), nullable=True),
+----------------------------------------
+
+Document 249:
+ID: 3d15184f-dc96-4d32-8689-91abd479b5e5
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\38c4e85512a9_initial_migration.py
+Contenu:
+sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_users_username', 'users', ['username'], unique=True)
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 250:
+ID: 04df46d1-8a45-4ceb-96ad-11bdd9da53ba
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\38c4e85512a9_initial_migration.py
+Contenu:
+def downgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index('ix_users_username', 'users')
+    op.drop_table('users')
+    op.drop_table('roles')
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 251:
+ID: 06d2e956-170a-4d1e-ab6d-c54bffebf412
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\456a945560f6_login_support.py
+Contenu:
+"""login support
+
+Revision ID: 456a945560f6
+Revises: 38c4e85512a9
+Create Date: 2013-12-29 00:18:35.795259
+
+"""
+
+# revision identifiers, used by Alembic.
+revision = '456a945560f6'
+down_revision = '38c4e85512a9'
+
+from alembic import op
+import sqlalchemy as sa
+----------------------------------------
+
+Document 252:
+ID: b25c23e3-d644-4bbb-8326-7477b9522e7f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\456a945560f6_login_support.py
+Contenu:
+from alembic import op
+import sqlalchemy as sa
+
+
+def upgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.add_column('users', sa.Column('email', sa.String(length=64), nullable=True))
+    op.add_column('users', sa.Column('password_hash', sa.String(length=128), nullable=True))
+    op.create_index('ix_users_email', 'users', ['email'], unique=True)
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 253:
+ID: 01d79e15-830c-4cb4-a97b-2d4942375d73
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\456a945560f6_login_support.py
+Contenu:
+def downgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index('ix_users_email', 'users')
+    op.drop_column('users', 'password_hash')
+    op.drop_column('users', 'email')
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 254:
+ID: 3eb0f1af-8299-4343-a071-b238de736b46
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\51f5ccfba190_comments.py
+Contenu:
+"""comments
+
+Revision ID: 51f5ccfba190
+Revises: 2356a38169ea
+Create Date: 2014-01-01 12:08:43.287523
+
+"""
+
+# revision identifiers, used by Alembic.
+revision = '51f5ccfba190'
+down_revision = '2356a38169ea'
+
+from alembic import op
+import sqlalchemy as sa
+----------------------------------------
+
+Document 255:
+ID: 484d22b8-08fc-453a-ac26-9ac3c935d85b
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\51f5ccfba190_comments.py
+Contenu:
+def upgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.create_table('comments',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('body', sa.Text(), nullable=True),
+    sa.Column('body_html', sa.Text(), nullable=True),
+    sa.Column('timestamp', sa.DateTime(), nullable=True),
+    sa.Column('disabled', sa.Boolean(), nullable=True),
+    sa.Column('author_id', sa.Integer(), nullable=True),
+    sa.Column('post_id', sa.Integer(), nullable=True),
+----------------------------------------
+
+Document 256:
+ID: b4c21c8c-e96d-4335-9bc1-cc0c02e45fb7
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\51f5ccfba190_comments.py
+Contenu:
+sa.ForeignKeyConstraint(['author_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['post_id'], ['posts.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_comments_timestamp', 'comments', ['timestamp'], unique=False)
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 257:
+ID: c871e35f-6d53-4ce9-a562-3ed8a81591bd
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\51f5ccfba190_comments.py
+Contenu:
+def downgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index('ix_comments_timestamp', 'comments')
+    op.drop_table('comments')
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 258:
+ID: c92ce3c1-550d-4d01-b853-2a16321efb7f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\56ed7d33de8d_user_roles.py
+Contenu:
+"""user roles
+
+Revision ID: 56ed7d33de8d
+Revises: 190163627111
+Create Date: 2013-12-29 22:19:54.212604
+
+"""
+
+# revision identifiers, used by Alembic.
+revision = '56ed7d33de8d'
+down_revision = '190163627111'
+
+from alembic import op
+import sqlalchemy as sa
+----------------------------------------
+
+Document 259:
+ID: 71078e68-0b19-4bfa-91df-a5445db06fa8
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\56ed7d33de8d_user_roles.py
+Contenu:
+from alembic import op
+import sqlalchemy as sa
+
+
+def upgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.add_column('roles', sa.Column('default', sa.Boolean(), nullable=True))
+    op.add_column('roles', sa.Column('permissions', sa.Integer(), nullable=True))
+    op.create_index('ix_roles_default', 'roles', ['default'], unique=False)
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 260:
+ID: 6340229d-7198-4bdf-ba84-a13b23203614
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\56ed7d33de8d_user_roles.py
+Contenu:
+def downgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index('ix_roles_default', 'roles')
+    op.drop_column('roles', 'permissions')
+    op.drop_column('roles', 'default')
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 261:
+ID: e6cf2e7b-23bd-407c-970b-3e4668184c69
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\d66f086b258_user_information.py
+Contenu:
+"""user information
+
+Revision ID: d66f086b258
+Revises: 56ed7d33de8d
+Create Date: 2013-12-29 23:50:49.566954
+
+"""
+
+# revision identifiers, used by Alembic.
+revision = 'd66f086b258'
+down_revision = '56ed7d33de8d'
+
+from alembic import op
+import sqlalchemy as sa
+----------------------------------------
+
+Document 262:
+ID: 9f49a5d5-fb4f-40cd-a4be-b650e0595687
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\d66f086b258_user_information.py
+Contenu:
+def upgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.add_column('users', sa.Column('about_me', sa.Text(), nullable=True))
+    op.add_column('users', sa.Column('last_seen', sa.DateTime(), nullable=True))
+    op.add_column('users', sa.Column('location', sa.String(length=64), nullable=True))
+    op.add_column('users', sa.Column('member_since', sa.DateTime(), nullable=True))
+    op.add_column('users', sa.Column('name', sa.String(length=64), nullable=True))
+----------------------------------------
+
+Document 263:
+ID: cf426164-aed2-488d-a8a2-f47941f7442e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\d66f086b258_user_information.py
+Contenu:
+### end Alembic commands ###
+----------------------------------------
+
+Document 264:
+ID: 6d3a35ac-ba1f-40dd-98fb-975561b8d734
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\migrations\versions\d66f086b258_user_information.py
+Contenu:
+def downgrade():
+    ### commands auto generated by Alembic - please adjust! ###
+    op.drop_column('users', 'name')
+    op.drop_column('users', 'member_since')
+    op.drop_column('users', 'location')
+    op.drop_column('users', 'last_seen')
+    op.drop_column('users', 'about_me')
+    ### end Alembic commands ###
+----------------------------------------
+
+Document 265:
+ID: 68854b9f-520f-4ed8-b08f-ed5ceb73a3dc
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\requirements\common.txt
+Contenu:
+alembic==0.9.3
+bleach==2.0.0
+blinker==1.4
+click==6.7
+dominate==2.3.1
+Flask==0.12.2
+Flask-Bootstrap==3.3.7.1
+Flask-HTTPAuth==3.2.3
+Flask-Login==0.4.0
+Flask-Mail==0.9.1
+Flask-Migrate==2.0.4
+Flask-Moment==0.5.1
+Flask-PageDown==0.2.2
+Flask-SQLAlchemy==2.2
+Flask-WTF==0.14.2
+html5lib==0.999999999
+itsdangerous==0.24
+Jinja2==2.9.6
+Mako==1.0.7
+Markdown==2.6.8
+MarkupSafe==1.1.1
+python-dateutil==2.6.1
+python-dotenv==0.6.5
+python-editor==1.0.3
+six==1.10.0
+SQLAlchemy==1.1.11
+visitor==0.1.3
+----------------------------------------
+
+Document 266:
+ID: f337ca3a-758f-4b07-b7f7-1a3cb4900eff
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\requirements\common.txt
+Contenu:
+six==1.10.0
+SQLAlchemy==1.1.11
+visitor==0.1.3
+webencodings==0.5.1
+Werkzeug==0.12.2
+WTForms==2.1
+----------------------------------------
+
+Document 267:
+ID: 81578bdc-f6cb-461e-a99b-3d1e85613c18
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\requirements\dev.txt
+Contenu:
+-r common.txt
+certifi==2017.7.27.1
+chardet==3.0.4
+coverage==4.4.1
+faker==0.7.18
+httpie==0.9.9
+idna==2.5
+Pygments==2.2.0
+requests==2.18.2
+selenium==3.141.0
+urllib3==1.22
+----------------------------------------
+
+Document 268:
+ID: 08c2efd0-a717-4eb7-acb8-b948abd2470d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\requirements\docker.txt
+Contenu:
+-r common.txt
+gunicorn==19.7.1
+pymysql==0.7.11
+----------------------------------------
+
+Document 269:
+ID: aac89dac-caba-49ea-ab6e-f6bdc684d840
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\requirements\heroku.txt
+Contenu:
+-r prod.txt
+Flask-SSLify==0.1.5
+gunicorn==19.7.1
+psycopg2==2.7.3
+----------------------------------------
+
+Document 270:
+ID: d0cd2719-93dd-471e-905e-e1827da77e32
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\requirements\prod.txt
+Contenu:
+-r common.txt
+----------------------------------------
+
+Document 271:
+ID: 0a282bda-4816-48df-9b3d-0834f73841a5
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+import unittest
+import json
+import re
+from base64 import b64encode
+from app import create_app, db
+from app.models import User, Role, Post, Comment
+
+
+class APITestCase(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app('testing')
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+        Role.insert_roles()
+        self.client = self.app.test_client()
+----------------------------------------
+
+Document 272:
+ID: feb4e832-034a-4911-bc0d-e00ad990cb60
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+
+    def get_api_headers(self, username, password):
+        return {
+            'Authorization': 'Basic ' + b64encode(
+                (username + ':' + password).encode('utf-8')).decode('utf-8'),
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+----------------------------------------
+
+Document 273:
+ID: 4268a255-dead-4b36-a3ac-1622c59866a7
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+def test_404(self):
+        response = self.client.get(
+            '/wrong/url',
+            headers=self.get_api_headers('email', 'password'))
+        self.assertEqual(response.status_code, 404)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual(json_response['error'], 'not found')
+----------------------------------------
+
+Document 274:
+ID: 775d4753-8c99-412e-b011-02e0db3ce110
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+def test_no_auth(self):
+        response = self.client.get('/api/v1/posts/',
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, 401)
+
+    def test_bad_auth(self):
+        # add a user
+        r = Role.query.filter_by(name='User').first()
+        self.assertIsNotNone(r)
+        u = User(email='john@example.com', password='cat', confirmed=True,
+                 role=r)
+        db.session.add(u)
+        db.session.commit()
+----------------------------------------
+
+Document 275:
+ID: 393181d3-be00-4e6f-910d-5164fb4fc38e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# authenticate with bad password
+        response = self.client.get(
+            '/api/v1/posts/',
+            headers=self.get_api_headers('john@example.com', 'dog'))
+        self.assertEqual(response.status_code, 401)
+----------------------------------------
+
+Document 276:
+ID: bcc764f7-16dd-425b-839f-706443f3ad66
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+def test_token_auth(self):
+        # add a user
+        r = Role.query.filter_by(name='User').first()
+        self.assertIsNotNone(r)
+        u = User(email='john@example.com', password='cat', confirmed=True,
+                 role=r)
+        db.session.add(u)
+        db.session.commit()
+----------------------------------------
+
+Document 277:
+ID: b8166df7-32ec-482f-a97e-678d92965486
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# issue a request with a bad token
+        response = self.client.get(
+            '/api/v1/posts/',
+            headers=self.get_api_headers('bad-token', ''))
+        self.assertEqual(response.status_code, 401)
+----------------------------------------
+
+Document 278:
+ID: 075621be-90b6-44ac-85c0-a8b18aa69890
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# get a token
+        response = self.client.post(
+            '/api/v1/tokens/',
+            headers=self.get_api_headers('john@example.com', 'cat'))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertIsNotNone(json_response.get('token'))
+        token = json_response['token']
+----------------------------------------
+
+Document 279:
+ID: 30a1142c-7615-47d9-a716-1455c7493562
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# issue a request with the token
+        response = self.client.get(
+            '/api/v1/posts/',
+            headers=self.get_api_headers(token, ''))
+        self.assertEqual(response.status_code, 200)
+
+    def test_anonymous(self):
+        response = self.client.get(
+            '/api/v1/posts/',
+            headers=self.get_api_headers('', ''))
+        self.assertEqual(response.status_code, 401)
+----------------------------------------
+
+Document 280:
+ID: e6267921-567b-440a-bd89-19d86aa30306
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+def test_unconfirmed_account(self):
+        # add an unconfirmed user
+        r = Role.query.filter_by(name='User').first()
+        self.assertIsNotNone(r)
+        u = User(email='john@example.com', password='cat', confirmed=False,
+                 role=r)
+        db.session.add(u)
+        db.session.commit()
+----------------------------------------
+
+Document 281:
+ID: 9402b866-1f9e-464a-adae-2388508f32b2
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# get list of posts with the unconfirmed account
+        response = self.client.get(
+            '/api/v1/posts/',
+            headers=self.get_api_headers('john@example.com', 'cat'))
+        self.assertEqual(response.status_code, 403)
+----------------------------------------
+
+Document 282:
+ID: 8df5a3c9-41cd-4660-ad2f-5d8b55718adc
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+def test_posts(self):
+        # add a user
+        r = Role.query.filter_by(name='User').first()
+        self.assertIsNotNone(r)
+        u = User(email='john@example.com', password='cat', confirmed=True,
+                 role=r)
+        db.session.add(u)
+        db.session.commit()
+----------------------------------------
+
+Document 283:
+ID: 6900cdab-0f7c-4562-a3db-87f90381e657
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# write an empty post
+        response = self.client.post(
+            '/api/v1/posts/',
+            headers=self.get_api_headers('john@example.com', 'cat'),
+            data=json.dumps({'body': ''}))
+        self.assertEqual(response.status_code, 400)
+----------------------------------------
+
+Document 284:
+ID: 32ed06be-1c65-4ae8-a605-9de3251331e3
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# write a post
+        response = self.client.post(
+            '/api/v1/posts/',
+            headers=self.get_api_headers('john@example.com', 'cat'),
+            data=json.dumps({'body': 'body of the *blog* post'}))
+        self.assertEqual(response.status_code, 201)
+        url = response.headers.get('Location')
+        self.assertIsNotNone(url)
+----------------------------------------
+
+Document 285:
+ID: 06467dc3-9861-4c12-9817-8be48cba88a7
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# get the new post
+        response = self.client.get(
+            url,
+            headers=self.get_api_headers('john@example.com', 'cat'))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual('http://localhost' + json_response['url'], url)
+        self.assertEqual(json_response['body'], 'body of the *blog* post')
+        self.assertEqual(json_response['body_html'],
+----------------------------------------
+
+Document 286:
+ID: 7af5be87-488b-44c3-b7a6-2721cae80258
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+'<p>body of the <em>blog</em> post</p>')
+        json_post = json_response
+----------------------------------------
+
+Document 287:
+ID: 2356fe1f-5dae-4024-b2a3-29bd5ce99d25
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# get the post from the user
+        response = self.client.get(
+            '/api/v1/users/{}/posts/'.format(u.id),
+            headers=self.get_api_headers('john@example.com', 'cat'))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertIsNotNone(json_response.get('posts'))
+        self.assertEqual(json_response.get('count', 0), 1)
+        self.assertEqual(json_response['posts'][0], json_post)
+----------------------------------------
+
+Document 288:
+ID: a3dcef36-0e1a-40a1-b074-5d8f8081d7c4
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# get the post from the user as a follower
+        response = self.client.get(
+            '/api/v1/users/{}/timeline/'.format(u.id),
+            headers=self.get_api_headers('john@example.com', 'cat'))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertIsNotNone(json_response.get('posts'))
+        self.assertEqual(json_response.get('count', 0), 1)
+----------------------------------------
+
+Document 289:
+ID: 4902628b-e832-4fc9-8321-9d3623287d54
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+self.assertEqual(json_response['posts'][0], json_post)
+----------------------------------------
+
+Document 290:
+ID: a4914245-8724-4fcc-b649-99ad2c1efe45
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# edit post
+        response = self.client.put(
+            url,
+            headers=self.get_api_headers('john@example.com', 'cat'),
+            data=json.dumps({'body': 'updated body'}))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual('http://localhost' + json_response['url'], url)
+        self.assertEqual(json_response['body'], 'updated body')
+----------------------------------------
+
+Document 291:
+ID: 54bf879c-9dda-4ed3-a257-c11598ade6a9
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+self.assertEqual(json_response['body_html'], '<p>updated body</p>')
+----------------------------------------
+
+Document 292:
+ID: 58860e62-b904-480b-8b78-19ac60f3eaeb
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+def test_users(self):
+        # add two users
+        r = Role.query.filter_by(name='User').first()
+        self.assertIsNotNone(r)
+        u1 = User(email='john@example.com', username='john',
+                  password='cat', confirmed=True, role=r)
+        u2 = User(email='susan@example.com', username='susan',
+                  password='dog', confirmed=True, role=r)
+        db.session.add_all([u1, u2])
+        db.session.commit()
+----------------------------------------
+
+Document 293:
+ID: cc2d1335-07d6-4293-99ac-a1b321435c92
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# get users
+        response = self.client.get(
+            '/api/v1/users/{}'.format(u1.id),
+            headers=self.get_api_headers('susan@example.com', 'dog'))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual(json_response['username'], 'john')
+        response = self.client.get(
+            '/api/v1/users/{}'.format(u2.id),
+----------------------------------------
+
+Document 294:
+ID: f2bcc372-b7bf-4597-9f36-677b60930893
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+'/api/v1/users/{}'.format(u2.id),
+            headers=self.get_api_headers('susan@example.com', 'dog'))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual(json_response['username'], 'susan')
+----------------------------------------
+
+Document 295:
+ID: 09fbab73-1874-403a-944c-448c158e5211
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+def test_comments(self):
+        # add two users
+        r = Role.query.filter_by(name='User').first()
+        self.assertIsNotNone(r)
+        u1 = User(email='john@example.com', username='john',
+                  password='cat', confirmed=True, role=r)
+        u2 = User(email='susan@example.com', username='susan',
+                  password='dog', confirmed=True, role=r)
+        db.session.add_all([u1, u2])
+        db.session.commit()
+----------------------------------------
+
+Document 296:
+ID: c7ac20c8-ba2e-4f1f-8d0b-bf601e75e913
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# add a post
+        post = Post(body='body of the post', author=u1)
+        db.session.add(post)
+        db.session.commit()
+----------------------------------------
+
+Document 297:
+ID: 4f626f47-41ca-4045-ac78-30dc896797fc
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# write a comment
+        response = self.client.post(
+            '/api/v1/posts/{}/comments/'.format(post.id),
+            headers=self.get_api_headers('susan@example.com', 'dog'),
+            data=json.dumps({'body': 'Good [post](http://example.com)!'}))
+        self.assertEqual(response.status_code, 201)
+        json_response = json.loads(response.get_data(as_text=True))
+        url = response.headers.get('Location')
+        self.assertIsNotNone(url)
+----------------------------------------
+
+Document 298:
+ID: 147712a4-1c5e-43a7-a67c-0ab9ba4725a7
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+self.assertIsNotNone(url)
+        self.assertEqual(json_response['body'],
+                        'Good [post](http://example.com)!')
+        self.assertEqual(
+            re.sub('<.*?>', '', json_response['body_html']), 'Good post!')
+----------------------------------------
+
+Document 299:
+ID: 2c091680-68aa-4371-b550-80b4ac437bed
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# get the new comment
+        response = self.client.get(
+            url,
+            headers=self.get_api_headers('john@example.com', 'cat'))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertEqual('http://localhost' + json_response['url'], url)
+        self.assertEqual(json_response['body'],
+                        'Good [post](http://example.com)!')
+----------------------------------------
+
+Document 300:
+ID: 1a7d3c2f-fbbf-41e2-a744-0140ad67d8e5
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# add another comment
+        comment = Comment(body='Thank you!', author=u1, post=post)
+        db.session.add(comment)
+        db.session.commit()
+----------------------------------------
+
+Document 301:
+ID: 4ada6f58-a24a-416e-8942-9dba7652ee4d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# get the two comments from the post
+        response = self.client.get(
+            '/api/v1/posts/{}/comments/'.format(post.id),
+            headers=self.get_api_headers('susan@example.com', 'dog'))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertIsNotNone(json_response.get('comments'))
+        self.assertEqual(json_response.get('count', 0), 2)
+----------------------------------------
+
+Document 302:
+ID: 9cf7c957-cecf-4637-a22e-f2ce6dd82325
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_api.py
+Contenu:
+# get all the comments
+        response = self.client.get(
+            '/api/v1/posts/{}/comments/'.format(post.id),
+            headers=self.get_api_headers('susan@example.com', 'dog'))
+        self.assertEqual(response.status_code, 200)
+        json_response = json.loads(response.get_data(as_text=True))
+        self.assertIsNotNone(json_response.get('comments'))
+        self.assertEqual(json_response.get('count', 0), 2)
+----------------------------------------
+
+Document 303:
+ID: e20473fe-0847-4d3a-97cd-36bbb07ed576
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_basics.py
+Contenu:
+import unittest
+from flask import current_app
+from app import create_app, db
+
+
+class BasicsTestCase(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app('testing')
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+
+    def test_app_exists(self):
+        self.assertFalse(current_app is None)
+----------------------------------------
+
+Document 304:
+ID: 2fef421f-00df-4a5f-ae25-722b1829e72e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_basics.py
+Contenu:
+def test_app_is_testing(self):
+        self.assertTrue(current_app.config['TESTING'])
+----------------------------------------
+
+Document 305:
+ID: dd03a8e9-ab42-4f1d-bb90-29794859c3b0
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_client.py
+Contenu:
+import re
+import unittest
+from app import create_app, db
+from app.models import User, Role
+
+class FlaskClientTestCase(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app('testing')
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+        Role.insert_roles()
+        self.client = self.app.test_client(use_cookies=True)
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+----------------------------------------
+
+Document 306:
+ID: 2a78e0c1-1fb2-4d6e-bdb5-f6be0b309eec
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_client.py
+Contenu:
+def test_home_page(self):
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('Stranger' in response.get_data(as_text=True))
+----------------------------------------
+
+Document 307:
+ID: e686d9d3-e8b0-4422-a031-3387340b34bc
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_client.py
+Contenu:
+def test_register_and_login(self):
+        # register a new account
+        response = self.client.post('/auth/register', data={
+            'email': 'john@example.com',
+            'username': 'john',
+            'password': 'cat',
+            'password2': 'cat'
+        })
+        self.assertEqual(response.status_code, 302)
+----------------------------------------
+
+Document 308:
+ID: d909aa67-a321-4f04-b271-40120d5472eb
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_client.py
+Contenu:
+# login with the new account
+        response = self.client.post('/auth/login', data={
+            'email': 'john@example.com',
+            'password': 'cat'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(re.search('Hello,\s+john!',
+                                  response.get_data(as_text=True)))
+        self.assertTrue(
+            'You have not confirmed your account yet' in response.get_data(
+----------------------------------------
+
+Document 309:
+ID: ccfd839c-4ab5-46b5-ba3b-19423482b349
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_client.py
+Contenu:
+as_text=True))
+----------------------------------------
+
+Document 310:
+ID: 22683516-f33f-4544-ab1e-e90835d84732
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_client.py
+Contenu:
+# send a confirmation token
+        user = User.query.filter_by(email='john@example.com').first()
+        token = user.generate_confirmation_token()
+        response = self.client.get('/auth/confirm/{}'.format(token),
+                                   follow_redirects=True)
+        user.confirm(token)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            'You have confirmed your account' in response.get_data(
+                as_text=True))
+----------------------------------------
+
+Document 311:
+ID: d5d6e544-2f84-48da-b18e-3489a89e41a6
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_client.py
+Contenu:
+# log out
+        response = self.client.get('/auth/logout', follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('You have been logged out' in response.get_data(
+            as_text=True))
+----------------------------------------
+
+Document 312:
+ID: d51fae28-ec5c-4e09-ab70-cec7018ee62d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_selenium.py
+Contenu:
+import re
+import threading
+import time
+import unittest
+from selenium import webdriver
+from app import create_app, db, fake
+from app.models import Role, User, Post
+
+
+class SeleniumTestCase(unittest.TestCase):
+    client = None
+    
+    @classmethod
+    def setUpClass(cls):
+        # start Chrome
+        options = webdriver.ChromeOptions()
+        options.add_argument('headless')
+        try:
+            cls.client = webdriver.Chrome(chrome_options=options)
+        except:
+            pass
+----------------------------------------
+
+Document 313:
+ID: 350ac540-271f-4af1-845f-237fd8ee0135
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_selenium.py
+Contenu:
+# skip these tests if the browser could not be started
+        if cls.client:
+            # create the application
+            cls.app = create_app('testing')
+            cls.app_context = cls.app.app_context()
+            cls.app_context.push()
+
+            # suppress logging to keep unittest output clean
+            import logging
+            logger = logging.getLogger('werkzeug')
+            logger.setLevel("ERROR")
+----------------------------------------
+
+Document 314:
+ID: 24f0cfcf-c2d5-4462-ad14-58f94a9190d9
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_selenium.py
+Contenu:
+# create the database and populate with some fake data
+            db.create_all()
+            Role.insert_roles()
+            fake.users(10)
+            fake.posts(10)
+----------------------------------------
+
+Document 315:
+ID: fc73a2c4-2b96-4790-b4c8-c31f010e8f95
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_selenium.py
+Contenu:
+# add an administrator user
+            admin_role = Role.query.filter_by(name='Administrator').first()
+            admin = User(email='john@example.com',
+                         username='john', password='cat',
+                         role=admin_role, confirmed=True)
+            db.session.add(admin)
+            db.session.commit()
+----------------------------------------
+
+Document 316:
+ID: 80cabd63-9668-47cd-b5ab-bc11007f9314
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_selenium.py
+Contenu:
+# start the Flask server in a thread
+            cls.server_thread = threading.Thread(target=cls.app.run,
+                                                 kwargs={'debug': False})
+            cls.server_thread.start()
+
+            # give the server a second to ensure it is up
+            time.sleep(1)
+----------------------------------------
+
+Document 317:
+ID: 29bffa79-7b58-413b-8e33-7a173bdf6637
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_selenium.py
+Contenu:
+@classmethod
+    def tearDownClass(cls):
+        if cls.client:
+            # stop the flask server and the browser
+            cls.client.get('http://localhost:5000/shutdown')
+            cls.client.quit()
+            cls.server_thread.join()
+
+            # destroy database
+            db.drop_all()
+            db.session.remove()
+
+            # remove application context
+            cls.app_context.pop()
+----------------------------------------
+
+Document 318:
+ID: 7de34ed9-5f4c-4e01-a17c-c712892f69a3
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_selenium.py
+Contenu:
+def setUp(self):
+        if not self.client:
+            self.skipTest('Web browser not available')
+
+    def tearDown(self):
+        pass
+    
+    def test_admin_home_page(self):
+        # navigate to home page
+        self.client.get('http://localhost:5000/')
+        self.assertTrue(re.search('Hello,\s+Stranger!',
+                                  self.client.page_source))
+----------------------------------------
+
+Document 319:
+ID: 7c7da8f4-b3b3-4214-a0c0-34d27b30b122
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_selenium.py
+Contenu:
+# navigate to login page
+        self.client.find_element_by_link_text('Log In').click()
+        self.assertIn('<h1>Login</h1>', self.client.page_source)
+
+        # login
+        self.client.find_element_by_name('email').\
+            send_keys('john@example.com')
+        self.client.find_element_by_name('password').send_keys('cat')
+        self.client.find_element_by_name('submit').click()
+        self.assertTrue(re.search('Hello,\s+john!', self.client.page_source))
+----------------------------------------
+
+Document 320:
+ID: 043d705f-48f8-4b2f-8e50-b51a238bac26
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_selenium.py
+Contenu:
+# navigate to the user's profile page
+        self.client.find_element_by_link_text('Profile').click()
+        self.assertIn('<h1>john</h1>', self.client.page_source)
+----------------------------------------
+
+Document 321:
+ID: a42e2fbe-ad8e-46ea-8eb2-22ca55519b2a
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+import unittest
+import time
+from datetime import datetime
+from app import create_app, db
+from app.models import User, AnonymousUser, Role, Permission, Follow
+
+
+class UserModelTestCase(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app('testing')
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+        Role.insert_roles()
+----------------------------------------
+
+Document 322:
+ID: d7cb66cb-50f1-411a-a152-acffbe6de796
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+
+    def test_password_setter(self):
+        u = User(password='cat')
+        self.assertTrue(u.password_hash is not None)
+
+    def test_no_password_getter(self):
+        u = User(password='cat')
+        with self.assertRaises(AttributeError):
+            u.password
+----------------------------------------
+
+Document 323:
+ID: 213bad83-008f-442b-9a83-f9890df595ed
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_password_verification(self):
+        u = User(password='cat')
+        self.assertTrue(u.verify_password('cat'))
+        self.assertFalse(u.verify_password('dog'))
+
+    def test_password_salts_are_random(self):
+        u = User(password='cat')
+        u2 = User(password='cat')
+        self.assertTrue(u.password_hash != u2.password_hash)
+----------------------------------------
+
+Document 324:
+ID: 999769e9-620c-45cd-8a80-0c81167b1305
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_valid_confirmation_token(self):
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_confirmation_token()
+        self.assertTrue(u.confirm(token))
+----------------------------------------
+
+Document 325:
+ID: 8fe4ab1c-19c1-4637-a9db-b47634d3ae37
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_invalid_confirmation_token(self):
+        u1 = User(password='cat')
+        u2 = User(password='dog')
+        db.session.add(u1)
+        db.session.add(u2)
+        db.session.commit()
+        token = u1.generate_confirmation_token()
+        self.assertFalse(u2.confirm(token))
+----------------------------------------
+
+Document 326:
+ID: 528e79b0-daae-4bd8-8540-dd5d0297f087
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_expired_confirmation_token(self):
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_confirmation_token(1)
+        time.sleep(2)
+        self.assertFalse(u.confirm(token))
+----------------------------------------
+
+Document 327:
+ID: 8a5f28cf-02f6-4b7a-af02-e7cb2f9d80a9
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_valid_reset_token(self):
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_reset_token()
+        self.assertTrue(User.reset_password(token, 'dog'))
+        self.assertTrue(u.verify_password('dog'))
+----------------------------------------
+
+Document 328:
+ID: 521d5b25-331d-427d-9f4d-5b47f0301eb4
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_invalid_reset_token(self):
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_reset_token()
+        self.assertFalse(User.reset_password(token + 'a', 'horse'))
+        self.assertTrue(u.verify_password('cat'))
+----------------------------------------
+
+Document 329:
+ID: 57fb0d64-3cd5-4443-b763-4f64d060e912
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_valid_email_change_token(self):
+        u = User(email='john@example.com', password='cat')
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_email_change_token('susan@example.org')
+        self.assertTrue(u.change_email(token))
+        self.assertTrue(u.email == 'susan@example.org')
+----------------------------------------
+
+Document 330:
+ID: 3adab854-24b1-4c6a-8471-d281b352851e
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_invalid_email_change_token(self):
+        u1 = User(email='john@example.com', password='cat')
+        u2 = User(email='susan@example.org', password='dog')
+        db.session.add(u1)
+        db.session.add(u2)
+        db.session.commit()
+        token = u1.generate_email_change_token('david@example.net')
+        self.assertFalse(u2.change_email(token))
+        self.assertTrue(u2.email == 'susan@example.org')
+----------------------------------------
+
+Document 331:
+ID: 7bf03106-ed1a-432f-9b88-44a882843faf
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_duplicate_email_change_token(self):
+        u1 = User(email='john@example.com', password='cat')
+        u2 = User(email='susan@example.org', password='dog')
+        db.session.add(u1)
+        db.session.add(u2)
+        db.session.commit()
+        token = u2.generate_email_change_token('john@example.com')
+        self.assertFalse(u2.change_email(token))
+        self.assertTrue(u2.email == 'susan@example.org')
+----------------------------------------
+
+Document 332:
+ID: 721d2ed5-7e7f-4a7c-97b4-5a51f14139af
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_user_role(self):
+        u = User(email='john@example.com', password='cat')
+        self.assertTrue(u.can(Permission.FOLLOW))
+        self.assertTrue(u.can(Permission.COMMENT))
+        self.assertTrue(u.can(Permission.WRITE))
+        self.assertFalse(u.can(Permission.MODERATE))
+        self.assertFalse(u.can(Permission.ADMIN))
+----------------------------------------
+
+Document 333:
+ID: 5aa19e8b-9433-424e-b60c-d58c6e716d37
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_moderator_role(self):
+        r = Role.query.filter_by(name='Moderator').first()
+        u = User(email='john@example.com', password='cat', role=r)
+        self.assertTrue(u.can(Permission.FOLLOW))
+        self.assertTrue(u.can(Permission.COMMENT))
+        self.assertTrue(u.can(Permission.WRITE))
+        self.assertTrue(u.can(Permission.MODERATE))
+        self.assertFalse(u.can(Permission.ADMIN))
+----------------------------------------
+
+Document 334:
+ID: d1403827-a951-4fab-ab8c-adae196cdeb9
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_administrator_role(self):
+        r = Role.query.filter_by(name='Administrator').first()
+        u = User(email='john@example.com', password='cat', role=r)
+        self.assertTrue(u.can(Permission.FOLLOW))
+        self.assertTrue(u.can(Permission.COMMENT))
+        self.assertTrue(u.can(Permission.WRITE))
+        self.assertTrue(u.can(Permission.MODERATE))
+        self.assertTrue(u.can(Permission.ADMIN))
+----------------------------------------
+
+Document 335:
+ID: 5fa1b537-c10a-4b99-bc0f-1e48f3e36ac3
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_anonymous_user(self):
+        u = AnonymousUser()
+        self.assertFalse(u.can(Permission.FOLLOW))
+        self.assertFalse(u.can(Permission.COMMENT))
+        self.assertFalse(u.can(Permission.WRITE))
+        self.assertFalse(u.can(Permission.MODERATE))
+        self.assertFalse(u.can(Permission.ADMIN))
+----------------------------------------
+
+Document 336:
+ID: 26d7e19d-fe43-4595-b907-c4e92def8af4
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_timestamps(self):
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        self.assertTrue(
+            (datetime.utcnow() - u.member_since).total_seconds() < 3)
+        self.assertTrue(
+            (datetime.utcnow() - u.last_seen).total_seconds() < 3)
+----------------------------------------
+
+Document 337:
+ID: 1f8707f1-12b6-4f2f-b530-a2c4997d291f
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_ping(self):
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        time.sleep(2)
+        last_seen_before = u.last_seen
+        u.ping()
+        self.assertTrue(u.last_seen > last_seen_before)
+----------------------------------------
+
+Document 338:
+ID: e356d3dd-a3a3-404d-a7f1-b9e7e8de649d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_gravatar(self):
+        u = User(email='john@example.com', password='cat')
+        with self.app.test_request_context('/'):
+            gravatar = u.gravatar()
+            gravatar_256 = u.gravatar(size=256)
+            gravatar_pg = u.gravatar(rating='pg')
+            gravatar_retro = u.gravatar(default='retro')
+        self.assertTrue('https://secure.gravatar.com/avatar/' +
+                        'd4c74594d841139328695756648b6bd6'in gravatar)
+----------------------------------------
+
+Document 339:
+ID: 8b7ac59f-d977-4bba-a446-26d7eb37997d
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+self.assertTrue('s=256' in gravatar_256)
+        self.assertTrue('r=pg' in gravatar_pg)
+        self.assertTrue('d=retro' in gravatar_retro)
+----------------------------------------
+
+Document 340:
+ID: 3c8ae74e-a80a-4592-9689-17f4f8798bda
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_follows(self):
+        u1 = User(email='john@example.com', password='cat')
+        u2 = User(email='susan@example.org', password='dog')
+        db.session.add(u1)
+        db.session.add(u2)
+        db.session.commit()
+        self.assertFalse(u1.is_following(u2))
+        self.assertFalse(u1.is_followed_by(u2))
+        timestamp_before = datetime.utcnow()
+        u1.follow(u2)
+        db.session.add(u1)
+        db.session.commit()
+        timestamp_after = datetime.utcnow()
+----------------------------------------
+
+Document 341:
+ID: 1170e64f-8c75-40e8-9bbf-9d4f62faf762
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+timestamp_after = datetime.utcnow()
+        self.assertTrue(u1.is_following(u2))
+        self.assertFalse(u1.is_followed_by(u2))
+        self.assertTrue(u2.is_followed_by(u1))
+        self.assertTrue(u1.followed.count() == 2)
+        self.assertTrue(u2.followers.count() == 2)
+        f = u1.followed.all()[-1]
+        self.assertTrue(f.followed == u2)
+        self.assertTrue(timestamp_before <= f.timestamp <= timestamp_after)
+        f = u2.followers.all()[-1]
+----------------------------------------
+
+Document 342:
+ID: 70566ae9-88c4-47a9-8e19-ea80c1031411
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+f = u2.followers.all()[-1]
+        self.assertTrue(f.follower == u1)
+        u1.unfollow(u2)
+        db.session.add(u1)
+        db.session.commit()
+        self.assertTrue(u1.followed.count() == 1)
+        self.assertTrue(u2.followers.count() == 1)
+        self.assertTrue(Follow.query.count() == 2)
+        u2.follow(u1)
+        db.session.add(u1)
+        db.session.add(u2)
+        db.session.commit()
+        db.session.delete(u2)
+        db.session.commit()
+----------------------------------------
+
+Document 343:
+ID: 5f8bb1c0-3b46-4d98-99b0-30e26b2a12a2
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+db.session.commit()
+        self.assertTrue(Follow.query.count() == 1)
+----------------------------------------
+
+Document 344:
+ID: ab24e608-e3c5-4e31-bce9-0cffb05f55e8
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+def test_to_json(self):
+        u = User(email='john@example.com', password='cat')
+        db.session.add(u)
+        db.session.commit()
+        with self.app.test_request_context('/'):
+            json_user = u.to_json()
+        expected_keys = ['url', 'username', 'member_since', 'last_seen',
+                         'posts_url', 'followed_posts_url', 'post_count']
+        self.assertEqual(sorted(json_user.keys()), sorted(expected_keys))
+----------------------------------------
+
+Document 345:
+ID: c6cf7868-9b10-4134-8fe3-7c81deeab190
+Type: unknown
+Source: ../knowledge_base\flasky\flasky\tests\test_user_model.py
+Contenu:
+self.assertEqual('/api/v1/users/' + str(u.id), json_user['url'])
+----------------------------------------
+
