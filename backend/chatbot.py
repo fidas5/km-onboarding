@@ -23,8 +23,7 @@ db = Chroma(
 llm = OllamaLLM(model="llama3")
 
 
-#prompt pour guider le modèle de langage dans la génération de réponses pertinentes 
-# et adaptées à la question posée par l'utilisateur.
+#Construction du Prompt
 def build_prompt(lang):
     template = f"""
 Tu es un assistant IA expert pour aider les développeurs.
@@ -122,9 +121,11 @@ def ask_question(query, lang, project, chat_id, database):
     retriever = db.as_retriever(
         search_type="mmr",
         search_kwargs={
-            "lambda_mult": 0.7,
-            "k": 5,
-            "filter": {"project": project}
+            "lambda_mult": 0.7,  # 70% pertinence, 30% diversité ,
+            # Pertinence = Les résultats doivent répondre DIRECTEMENT à la question
+            # Diversité = Les résultats doivent apporter des informations DIFFÉRENTES
+            "k": 5,  # Cherche dans TOUS les chunks, mais ne retourne que les 5 PLUS PERTINENTS
+            "filter": {"project": project}  # Ne cherche que dans ce projet
         }
     )
 
@@ -153,3 +154,5 @@ def ask_question(query, lang, project, chat_id, database):
         "answer": answer,
         "sources": formatted_sources
     }
+
+

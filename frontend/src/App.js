@@ -177,6 +177,7 @@ function ProfilePage() {
 }
 
 // Learning Plan Page
+// Learning Plan Page - COMPLETE FIXED VERSION
 function LearningPlanPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -187,11 +188,11 @@ function LearningPlanPage() {
   
   const { project, learningPlan, pathId, savedProgress, savedStatus, isNewPlan } = location.state || {};
 
-  const loadSavedLearningPlan = async () => {
+  // Function to load saved learning plan from backend
+  const loadSavedLearningPlan = async (userId) => {
     try {
-      const userId = user?.id || user?.user_id;
       const response = await fetchWithAuth(
-        `http://127.0.0.1:5000/get-learning-progress/${userId}/${project.name}`,
+        `http://127.0.0.1:5000/get-learning-progress/${userId}/${encodeURIComponent(project.name)}`,
         token
       );
       const data = await response.json();
@@ -205,6 +206,7 @@ function LearningPlanPage() {
           progressPercentage: data.progress_percentage
         });
       } else {
+        console.error("No learning plan found");
         navigate("/projects");
       }
     } catch (error) {
@@ -215,48 +217,100 @@ function LearningPlanPage() {
     }
   };
 
+  // Effect 1: Load user from localStorage ONCE when component mounts
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error("Error parsing user:", error);
+        navigate("/login");
+      }
+    } else {
+      // No user found, redirect to login
+      setLoading(false);
+      navigate("/login");
     }
+  }, []); // Empty dependency array - runs only once on mount
+
+  // Effect 2: Handle learning plan loading after user is available
+  useEffect(() => {
+    // Don't proceed if user is not loaded yet
+    if (!user) return;
     
+    // Check if project exists
     if (!project) {
+      console.error("No project data found");
       navigate("/projects");
       return;
     }
     
+    // If this is a new plan (coming from profile form)
+    if (isNewPlan && learningPlan) {
+      setLearningData({ 
+        learningPlan, 
+        pathId, 
+        savedProgress, 
+        savedStatus 
+      });
+      setLoading(false);
+      return;
+    }
+    
+    // If we have a saved plan (not new) but no learningPlan passed
     if (!isNewPlan && !learningPlan) {
-      const userId = user?.id || user?.user_id;
+      const userId = user.id || user.user_id;
       if (userId) {
-        loadSavedLearningPlan();
+        loadSavedLearningPlan(userId);
+      } else {
+        console.error("No user ID found");
+        navigate("/projects");
       }
-    } else {
+      return;
+    }
+    
+    // If we have learningPlan but not from new plan
+    if (learningPlan && !isNewPlan) {
       setLearningData({ learningPlan, pathId, savedProgress, savedStatus });
       setLoading(false);
     }
-  }, [project, learningPlan, isNewPlan, navigate, user]);
+    
+  }, [user, project, isNewPlan, learningPlan, pathId, savedProgress, savedStatus, navigate]);
 
+  // Handle learning plan completion
   const handleComplete = async () => {
+    if (!user || !project) return;
+    
     try {
-      const userId = user?.id || user?.user_id;
+      const userId = user.id || user.user_id;
       await fetchWithAuth("http://127.0.0.1:5000/update-learning-status", token, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           user_id: userId,
           project: project.name,
           status: "completed"
         })
       });
+      
+      // Optionally show success message or navigate
+      console.log("Learning plan marked as completed");
     } catch (error) {
-      console.error("Erreur sauvegarde:", error);
+      console.error("Error saving completion status:", error);
     }
   };
 
+  // Handle continue to chat
   const handleContinueToChat = () => {
     navigate("/chat", { state: { project } });
   };
 
+  // Loading state
   if (loading) {
     return (
       <div style={styles.loading}>
@@ -266,20 +320,58 @@ function LearningPlanPage() {
     );
   }
 
-  if (!learningData || !learningData.learningPlan || !user) {
+  // No learning data found
+  if (!learningData || !learningData.learningPlan) {
     return (
       <div style={styles.loading}>
         <p>Aucun plan d'apprentissage trouvé</p>
-        <button onClick={() => navigate("/projects")}>Retour aux projets</button>
+        <button 
+          onClick={() => navigate("/projects")}
+          style={{
+            marginTop: "1rem",
+            padding: "0.5rem 1rem",
+            backgroundColor: "#3b82f6",
+            color: "white",
+            border: "none",
+            borderRadius: "0.375rem",
+            cursor: "pointer"
+          }}
+        >
+          Retour aux projets
+        </button>
       </div>
     );
   }
 
+  // No user found
+  if (!user) {
+    return (
+      <div style={styles.loading}>
+        <p>Utilisateur non trouvé</p>
+        <button 
+          onClick={() => navigate("/login")}
+          style={{
+            marginTop: "1rem",
+            padding: "0.5rem 1rem",
+            backgroundColor: "#3b82f6",
+            color: "white",
+            border: "none",
+            borderRadius: "0.375rem",
+            cursor: "pointer"
+          }}
+        >
+          Se connecter
+        </button>
+      </div>
+    );
+  }
+
+  // Render the learning plan
   return (
     <LearningPlan
       learningPlan={learningData.learningPlan}
       project={project.name}
-      userId={user?.id || user?.user_id}
+      userId={user.id || user.user_id}
       pathId={learningData.pathId}
       initialCompletedSteps={learningData.savedProgress}
       initialStatus={learningData.savedStatus}
@@ -288,7 +380,6 @@ function LearningPlanPage() {
     />
   );
 }
-
 // Learning Page
 function LearningPageRoute() {
   const navigate = useNavigate();
@@ -329,7 +420,7 @@ function LearningPageRoute() {
 }
 
 // Chat Page
-// Chat Page - Version corrigée
+
 function ChatPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -398,15 +489,32 @@ function ChatPage() {
     loadConversations();
   }, [project, token]);
 
-  // ✅ CORRECTION: Fonction handleNewChat qui crée un vrai chat
-const handleNewChat = async () => {
+
+const handleNewChat = async (firstQuestion = null) => {
   if (!project || !token) {
     console.error("No project or token");
-    return null;  // ✅ Retourner null
+    return null;
   }
   
   try {
-    const title = `Chat ${new Date().toLocaleString()}`;
+    let title;
+    
+    const isValidQuestion = firstQuestion && 
+                           typeof firstQuestion === 'string' && 
+                           firstQuestion.trim().length > 0;
+    
+    if (isValidQuestion) {
+      const cleanQuestion = firstQuestion.trim();
+      title = cleanQuestion.length > 50 
+        ? cleanQuestion.substring(0, 47) + "..." 
+        : cleanQuestion;
+    } else {
+      const now = new Date();
+      const dateStr = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()} ${now.getHours()}:${now.getMinutes()}`;
+      title = `Nouvelle conversation`;
+    }
+    
+    console.log("📝 Creating new chat with title:", title);
     
     const response = await fetch("http://127.0.0.1:5000/chats", {
       method: "POST",
@@ -422,11 +530,12 @@ const handleNewChat = async () => {
     
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("Failed to create chat:", errorData);
+      console.error("❌ Failed to create chat:", errorData);
       return null;
     }
     
     const data = await response.json();
+    console.log("✅ Chat created:", data);
     
     if (data && data.id) {
       const newChat = {
@@ -436,20 +545,23 @@ const handleNewChat = async () => {
         pinned: false,
       };
       
-      setConversations((prev) => [newChat, ...(Array.isArray(prev) ? prev : [])]);
+      setConversations((prev) => {
+        const current = Array.isArray(prev) ? prev : [];
+        return [newChat, ...current];
+      });
       setCurrentChatId(data.id);
       
-      return data.id;  // ✅ Retourner l'ID
+      return data.id;
     }
     return null;
   } catch (error) {
-    console.error("Error creating chat:", error);
+    console.error("❌ Error creating chat:", error);
     return null;
   }
 };
 
+
   const addMessage = async (chatId, message) => {
-    // Ajouter localement
     setConversations((prev) =>
       prev.map((chat) => {
         if (chat.id !== chatId) return chat;
@@ -460,7 +572,6 @@ const handleNewChat = async () => {
       })
     );
 
-    // Sauvegarder sur le serveur
     try {
       await fetch("http://127.0.0.1:5000/messages", {
         method: "POST",

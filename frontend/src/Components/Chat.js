@@ -67,10 +67,10 @@ function Chat({
 
     let chatId = currentChatId;
 
-    // ✅ Si pas de chat ID, créer un nouveau chat
+    // ✅ Si pas de chat ID, créer un nouveau chat avec la question comme titre
     if (!chatId) {
       setIsLoading(true);
-      const newChatId = await handleNewChat();
+      const newChatId = await handleNewChat(question);  // ← PASSER LA QUESTION
       setIsLoading(false);
       
       if (!newChatId) {

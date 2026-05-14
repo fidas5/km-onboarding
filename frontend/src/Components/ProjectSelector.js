@@ -277,7 +277,7 @@ function ProjectSelector({ setProject, logout }) {
                     })
                   }
                 >
-                  💬 Explorer le projet avec l'IA
+                  Explorer le projet avec l'IA
                 </button>
 
                 <button
@@ -286,7 +286,7 @@ function ProjectSelector({ setProject, logout }) {
                 >
                   {hasLearningPlan ? (
                     <>
-                      <span className="btn-icon">🔄</span>
+                      <span className="btn-icon"></span>
                       Continuer votre apprentissage
                       {progress > 0 && (
                         <span className="btn-progress">{Math.round(progress)}%</span>
@@ -294,7 +294,7 @@ function ProjectSelector({ setProject, logout }) {
                     </>
                   ) : (
                     <>
-                      <span className="btn-icon">🚀</span>
+                      <span className="btn-icon"></span>
                       Créer un parcours d'apprentissage
                     </>
                   )}
