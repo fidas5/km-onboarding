@@ -9,46 +9,62 @@ function AddProjectModal({ close, refreshProjects }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-const handleFileChange = (e) => {
-  const selectedFile = e.target.files[0];
-  
-  // Check if it's a ZIP file
-  if (selectedFile && !selectedFile.name.toLowerCase().endsWith('.zip')) {
-    setError("Seulement les fichiers ZIP sont acceptés");
-    setFile(null);
-    e.target.value = null;
-    return;
-  }
-  
-  // Increase max size to 1GB (or remove the limit)
-  const maxSize = 1024 * 1024 * 1024; // 1GB
-  if (selectedFile && selectedFile.size > maxSize) {
-    setError(`Fichier trop volumineux (max 1GB). Votre fichier fait ${(selectedFile.size / (1024 * 1024)).toFixed(2)}MB`);
-    setFile(null);
-    e.target.value = null;
-    return;
-  }
-  
-  setFile(selectedFile);
-  setError(null);
-};
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setError(null);
+    
+    // Check if it's a ZIP file
+    if (selectedFile && !selectedFile.name.toLowerCase().endsWith('.zip')) {
+      setError("Seulement les fichiers ZIP sont acceptés");
+      setFile(null);
+      e.target.value = null;
+      return;
+    }
+    
+    // Max size 1GB
+    const maxSize = 1024 * 1024 * 1024;
+    if (selectedFile && selectedFile.size > maxSize) {
+      setError(`Fichier trop volumineux (max 1GB). Votre fichier fait ${(selectedFile.size / (1024 * 1024)).toFixed(2)}MB`);
+      setFile(null);
+      e.target.value = null;
+      return;
+    }
+    
+    setFile(selectedFile);
+  };
 
   const handleSubmit = async () => {
+    setError(null);
+    
     // Validation
-    if (!name || !description || !technologies || !file) {
-      setError("Tous les champs sont obligatoires");
+    if (!name.trim()) {
+      setError("Le nom du projet est requis");
+      return;
+    }
+    
+    if (!description.trim()) {
+      setError("La description est requise");
+      return;
+    }
+    
+    if (!technologies.trim()) {
+      setError("Les technologies sont requises");
+      return;
+    }
+    
+    if (!file) {
+      setError("Veuillez sélectionner un fichier ZIP");
       return;
     }
 
     setIsLoading(true);
-    setError(null);
 
     const formData = new FormData();
-    formData.append("name", name);
-    formData.append("description", description);
+    formData.append("name", name.trim());
+    formData.append("description", description.trim());
     formData.append(
       "technologies",
-      JSON.stringify(technologies.split(",").map(t => t.trim()))
+      JSON.stringify(technologies.split(",").map(t => t.trim()).filter(t => t))
     );
     formData.append("file", file);
 
@@ -58,14 +74,13 @@ const handleFileChange = (e) => {
         body: formData,
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erreur lors de l'ajout");
+        throw new Error(data.error || "Erreur lors de l'ajout du projet");
       }
 
-      const result = await response.json();
-      console.log("Success:", result);
-      
+      console.log("Success:", data);
       await refreshProjects();
       close();
     } catch (err) {
@@ -77,58 +92,74 @@ const handleFileChange = (e) => {
   };
 
   return (
-    <div className="modal">
-      <h2>Ajouter Projet</h2>
+    <div className="modal-overlay" onClick={close}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h2>📦 Ajouter un projet</h2>
 
-      {error && (
-        <div className="error-message">
-          ⚠️ {error}
-        </div>
-      )}
-
-      <input
-        placeholder="Nom du projet"
-        onChange={(e) => setName(e.target.value)}
-        disabled={isLoading}
-      />
-
-      <textarea
-        placeholder="Description"
-        onChange={(e) => setDescription(e.target.value)}
-        disabled={isLoading}
-      />
-
-      <input
-        placeholder="Technologies (ex: React,Node)"
-        onChange={(e) => setTechnologies(e.target.value)}
-        disabled={isLoading}
-      />
-
-      <input
-        type="file"
-        onChange={handleFileChange}
-        disabled={isLoading}
-        accept=".zip"
-      />
-
-      <button 
-        onClick={handleSubmit} 
-        disabled={isLoading || !file}
-        className={isLoading ? "loading" : ""}
-      >
-        {isLoading ? (
-          <>
-            <span className="spinner"></span>
-            Ajout en cours...
-          </>
-        ) : (
-          "Valider"
+        {error && (
+          <div className="error-message">
+            ⚠️ {error}
+          </div>
         )}
-      </button>
-      
-      <button onClick={close} disabled={isLoading}>
-        Annuler
-      </button>
+
+        <input
+          type="text"
+          placeholder="Nom du projet"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setError(null);
+          }}
+          disabled={isLoading}
+        />
+
+        <textarea
+          placeholder="Description"
+          value={description}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            setError(null);
+          }}
+          disabled={isLoading}
+        />
+
+        <input
+          type="text"
+          placeholder="Technologies (ex: React, Node, Python)"
+          value={technologies}
+          onChange={(e) => {
+            setTechnologies(e.target.value);
+            setError(null);
+          }}
+          disabled={isLoading}
+        />
+
+        <input
+          type="file"
+          onChange={handleFileChange}
+          disabled={isLoading}
+          accept=".zip"
+        />
+
+        <button 
+          onClick={handleSubmit} 
+          disabled={isLoading || !file}
+          className={isLoading ? "loading" : ""}
+        >
+          {isLoading ? (
+            <>
+              <span className="spinner"></span>
+              Ajout en cours...
+            </>
+          ) : (
+            "Valider"
+          )}
+        </button>
+        
+        <button onClick={close} disabled={isLoading}>
+          Annuler
+        </button>
+      </div>
     </div>
   );
 }

@@ -16,34 +16,68 @@ function Chat({
   const [question, setQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  
+  // Récupérer le token
+  const token = localStorage.getItem("token");
 
   const currentChat = conversations.find((chat) => chat.id === currentChatId);
   const messages = currentChat ? currentChat.messages : [];
 
+  // Fonction pour faire des requêtes authentifiées
+  const fetchWithAuth = async (url, options = {}) => {
+    const defaultOptions = {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": token ? `Bearer ${token}` : "",
+        ...options.headers,
+      },
+      ...options,
+    };
+    
+    return fetch(url, defaultOptions);
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Charger les conversations existantes pour cet utilisateur
+  useEffect(() => {
+    const loadConversations = async () => {
+      if (!project || !token) return;
+      
+      try {
+        const response = await fetchWithAuth(`http://127.0.0.1:5000/chats/${project}`);
+        if (response.ok) {
+          const chats = await response.json();
+          if (Array.isArray(chats)) {
+            setConversations(chats);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading conversations:", error);
+      }
+    };
+    
+    loadConversations();
+  }, [project]);
 
   const handleAsk = async () => {
     if (!question.trim() || isLoading) return;
 
     let chatId = currentChatId;
 
+    // ✅ Si pas de chat ID, créer un nouveau chat
     if (!chatId) {
-      const title = question.length > 30 ? question.slice(0, 30) + "..." : question;
-
-      const res = await fetch("http://127.0.0.1:5000/chats", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project, title }),
-      });
-
-      const data = await res.json();
-      chatId = data.id;
-
-      const newChat = { id: chatId, title, messages: [], pinned: false };
-      setConversations((prev) => [...prev, newChat]);
-      setCurrentChatId(chatId);
+      setIsLoading(true);
+      const newChatId = await handleNewChat();
+      setIsLoading(false);
+      
+      if (!newChatId) {
+        console.error("Failed to create chat");
+        return;
+      }
+      chatId = newChatId;
     }
 
     const userMsg = { role: "user", content: question };
@@ -61,9 +95,9 @@ function Chat({
     );
 
     try {
-      const res = await fetch("http://127.0.0.1:5000/ask", {
+      // Requête avec authentification
+      const res = await fetchWithAuth("http://127.0.0.1:5000/ask", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, project, chat_id: chatId }),
       });
 
@@ -76,7 +110,6 @@ function Chat({
         prev.map((chat) => {
           if (chat.id !== chatId) return chat;
           const updatedMessages = [...chat.messages];
-          // Remplacer le dernier message (temporaire) par un vrai message assistant
           updatedMessages[updatedMessages.length - 1] = { role: "assistant", content: "", isLoading: true };
           return { ...chat, messages: updatedMessages };
         })
@@ -101,14 +134,13 @@ function Chat({
         );
       }
 
-      await fetch("http://127.0.0.1:5000/messages", {
+      // Sauvegarder le message assistant avec authentification
+      await fetchWithAuth("http://127.0.0.1:5000/messages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: chatId, role: "assistant", content: botText }),
       });
     } catch (error) {
       console.error("Error:", error);
-      // En cas d'erreur, mettre à jour le message d'erreur
       setConversations((prev) =>
         prev.map((chat) => {
           if (chat.id !== chatId) return chat;

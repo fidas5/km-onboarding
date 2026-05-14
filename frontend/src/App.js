@@ -34,13 +34,27 @@ const styles = {
   }
 };
 
+// ✅ Fonction helper pour les requêtes authentifiées
+const fetchWithAuth = async (url, token, options = {}) => {
+  const defaultOptions = {
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": token ? `Bearer ${token}` : "",
+      ...options.headers,
+    },
+    ...options,
+  };
+  return fetch(url, defaultOptions);
+};
+
 function ProtectedRoute({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
-    if (savedUser) {
+    const token = localStorage.getItem("token");
+    if (savedUser && token) {
       setUser(JSON.parse(savedUser));
     }
     setLoading(false);
@@ -61,7 +75,8 @@ function AdminRoute({ children }) {
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
-    if (savedUser) {
+    const token = localStorage.getItem("token");
+    if (savedUser && token) {
       setUser(JSON.parse(savedUser));
     }
     setLoading(false);
@@ -168,19 +183,24 @@ function LearningPlanPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [learningData, setLearningData] = useState(null);
+  const token = localStorage.getItem("token");
   
   const { project, learningPlan, pathId, savedProgress, savedStatus, isNewPlan } = location.state || {};
 
   const loadSavedLearningPlan = async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:5000/get-learning-progress/${user?.user_id}/${project.name}`);
+      const userId = user?.id || user?.user_id;
+      const response = await fetchWithAuth(
+        `http://127.0.0.1:5000/get-learning-progress/${userId}/${project.name}`,
+        token
+      );
       const data = await response.json();
       
       if (data.exists) {
         setLearningData({
           learningPlan: data.learning_path,
           pathId: data.path_id,
-          savedProgress: data.completed_steps ? JSON.parse(data.completed_steps) : [],
+          savedProgress: data.completed_steps,
           savedStatus: data.status,
           progressPercentage: data.progress_percentage
         });
@@ -207,22 +227,23 @@ function LearningPlanPage() {
     }
     
     if (!isNewPlan && !learningPlan) {
-      if (user?.user_id) {
+      const userId = user?.id || user?.user_id;
+      if (userId) {
         loadSavedLearningPlan();
       }
     } else {
       setLearningData({ learningPlan, pathId, savedProgress, savedStatus });
       setLoading(false);
     }
-  }, [project, learningPlan, isNewPlan, navigate, user?.user_id]);
+  }, [project, learningPlan, isNewPlan, navigate, user]);
 
   const handleComplete = async () => {
     try {
-      await fetch("http://127.0.0.1:5000/update-learning-status", {
+      const userId = user?.id || user?.user_id;
+      await fetchWithAuth("http://127.0.0.1:5000/update-learning-status", token, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: user?.user_id,
+          user_id: userId,
           project: project.name,
           status: "completed"
         })
@@ -258,7 +279,7 @@ function LearningPlanPage() {
     <LearningPlan
       learningPlan={learningData.learningPlan}
       project={project.name}
-      userId={user.user_id}
+      userId={user?.id || user?.user_id}
       pathId={learningData.pathId}
       initialCompletedSteps={learningData.savedProgress}
       initialStatus={learningData.savedStatus}
@@ -308,12 +329,14 @@ function LearningPageRoute() {
 }
 
 // Chat Page
+// Chat Page - Version corrigée
 function ChatPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
+  const token = localStorage.getItem("token");
   
   const project = location.state?.project;
 
@@ -329,30 +352,104 @@ function ChatPage() {
     }
   }, [project, navigate]);
 
+  // Charger les conversations avec authentification
   useEffect(() => {
-    if (!project || !user) return;
+    if (!project || !token) return;
 
-    fetch(`http://127.0.0.1:5000/chats/${project.name}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const formatted = data.map((chat) => ({
-          id: chat.id,
-          title: chat.title || "New Chat",
-          pinned: Boolean(chat.pinned),
-          messages: chat.messages || []
-        }));
+    const loadConversations = async () => {
+      try {
+        console.log("Loading conversations for project:", project.name);
+        
+        const response = await fetch(`http://127.0.0.1:5000/chats/${project.name}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Conversations loaded:", data);
+          
+          if (Array.isArray(data)) {
+            const formatted = data.map((chat) => ({
+              id: chat.id,
+              title: chat.title || "New Chat",
+              pinned: Boolean(chat.pinned),
+              messages: chat.messages || []
+            }));
+            setConversations(formatted);
+            if (formatted.length > 0) {
+              setCurrentChatId(formatted[0].id);
+            }
+          } else {
+            setConversations([]);
+          }
+        } else {
+          console.error("Failed to load conversations:", response.status);
+          setConversations([]);
+        }
+      } catch (error) {
+        console.error("Error loading chats:", error);
+        setConversations([]);
+      }
+    };
 
-        setConversations(formatted);
-        setCurrentChatId(formatted.length > 0 ? formatted[0].id : null);
-      })
-      .catch(error => console.error("Error loading chats:", error));
-  }, [project, user]);
+    loadConversations();
+  }, [project, token]);
 
-  const handleNewChat = () => {
-    setCurrentChatId(null);
-  };
+  // ✅ CORRECTION: Fonction handleNewChat qui crée un vrai chat
+const handleNewChat = async () => {
+  if (!project || !token) {
+    console.error("No project or token");
+    return null;  // ✅ Retourner null
+  }
+  
+  try {
+    const title = `Chat ${new Date().toLocaleString()}`;
+    
+    const response = await fetch("http://127.0.0.1:5000/chats", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ 
+        project: project.name, 
+        title: title 
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Failed to create chat:", errorData);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    if (data && data.id) {
+      const newChat = {
+        id: data.id,
+        title: title,
+        messages: [],
+        pinned: false,
+      };
+      
+      setConversations((prev) => [newChat, ...(Array.isArray(prev) ? prev : [])]);
+      setCurrentChatId(data.id);
+      
+      return data.id;  // ✅ Retourner l'ID
+    }
+    return null;
+  } catch (error) {
+    console.error("Error creating chat:", error);
+    return null;
+  }
+};
 
   const addMessage = async (chatId, message) => {
+    // Ajouter localement
     setConversations((prev) =>
       prev.map((chat) => {
         if (chat.id !== chatId) return chat;
@@ -363,15 +460,23 @@ function ChatPage() {
       })
     );
 
-    await fetch("http://127.0.0.1:5000/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        role: message.role,
-        content: message.content
-      })
-    });
+    // Sauvegarder sur le serveur
+    try {
+      await fetch("http://127.0.0.1:5000/messages", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          role: message.role,
+          content: message.content
+        })
+      });
+    } catch (error) {
+      console.error("Error saving message:", error);
+    }
   };
 
   const handleLogout = () => {
@@ -407,7 +512,8 @@ function LoginPage() {
   
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
-    if (savedUser) {
+    const token = localStorage.getItem("token");
+    if (savedUser && token) {
       const user = JSON.parse(savedUser);
       if (user.role === "admin") {
         navigate("/admin");
@@ -417,9 +523,18 @@ function LoginPage() {
     }
   }, [navigate]);
 
-  const handleSetUser = (user) => {
-    localStorage.setItem("user", JSON.stringify(user));
-    if (user.role === "admin") {
+  const handleSetUser = (userData) => {
+    // ✅ Stocker correctement l'utilisateur avec id
+    const userToStore = {
+      id: userData.user_id || userData.id,
+      user_id: userData.user_id || userData.id,
+      name: userData.name,
+      email: userData.email,
+      role: userData.role
+    };
+    localStorage.setItem("user", JSON.stringify(userToStore));
+    
+    if (userData.role === "admin") {
       navigate("/admin");
     } else {
       navigate("/projects");

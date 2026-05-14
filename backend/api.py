@@ -206,31 +206,193 @@ def delete_project():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/chats/<project>", methods=["GET"])
-def get_chats(project):
-    cursor.execute("SELECT * FROM chats WHERE project=%s", (project,))
-    chats = cursor.fetchall()
-
-    for chat in chats:
-        cursor.execute("SELECT * FROM messages WHERE chat_id=%s", (chat["id"],))
-        chat["messages"] = cursor.fetchall()
-
-    return jsonify(chats)
+@app.route("/projects/<string:project_name>", methods=["PUT"])
+def modify_project(project_name):
+    """
+    Modifier un projet existant par son NOM (description, technologies)
+    """
+    data = request.json
+    new_name = data.get("name")
+    new_description = data.get("description")
+    new_technologies = data.get("technologies")
+    
+    if not any([new_name, new_description, new_technologies]):
+        return jsonify({"error": "Au moins un champ à modifier (name, description, technologies) est requis"}), 400
+    
+    try:
+        # 1. Vérifier si le projet existe dans ChromaDB
+        docs = db.get()
+        project_exists = False
+        ids_to_update = []
+        
+        for i, meta in enumerate(docs["metadatas"]):
+            if meta and meta.get("project") == project_name:
+                project_exists = True
+                ids_to_update.append(docs["ids"][i])
+        
+        if not project_exists:
+            return jsonify({"error": f"Projet '{project_name}' non trouvé"}), 404
+        
+        # 2. Si le nom change, vérifier que le nouveau nom n'existe pas déjà
+        if new_name and new_name != project_name:
+            for meta in docs["metadatas"]:
+                if meta and meta.get("project") == new_name:
+                    return jsonify({"error": f"Le projet '{new_name}' existe déjà"}), 409
+        
+        # 3. Mettre à jour dans ChromaDB - Version CORRIGÉE
+        for doc_id in ids_to_update:
+            # Récupérer les métadonnées existantes
+            doc_index = docs["ids"].index(doc_id)
+            current_metadata = docs["metadatas"][doc_index].copy()
+            
+            # Mettre à jour les champs modifiés
+            if new_name:
+                current_metadata["project"] = new_name
+            if new_description:
+                current_metadata["description"] = new_description
+            if new_technologies is not None:
+                if isinstance(new_technologies, str):
+                    try:
+                        new_technologies = json.loads(new_technologies)
+                    except:
+                        new_technologies = []
+                current_metadata["technologies"] = new_technologies
+            
+            # ✅ Correction: Utiliser db._collection.update() au lieu de db.update()
+            db._collection.update(
+                ids=[doc_id],
+                metadatas=[current_metadata]
+            )
+        
+        # 4. Si le nom a changé, mettre à jour dans MySQL
+        if new_name and new_name != project_name:
+            cursor = database.cursor()
+            
+            # Mettre à jour dans chats
+            cursor.execute("UPDATE chats SET project = %s WHERE project = %s", (new_name, project_name))
+            
+            # Mettre à jour dans learning_paths
+            cursor.execute("UPDATE learning_paths SET project = %s WHERE project = %s", (new_name, project_name))
+            
+            database.commit()
+            
+            # Renommer le dossier physique
+            knowledge_base_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "knowledge_base")
+            old_path = os.path.join(knowledge_base_path, project_name)
+            new_path = os.path.join(knowledge_base_path, new_name)
+            
+            if os.path.exists(old_path):
+                os.rename(old_path, new_path)
+                print(f"✅ Dossier renommé: {old_path} -> {new_path}")
+        
+        # 5. Construire la réponse
+        response = {
+            "message": f"Projet '{project_name}' modifié avec succès",
+            "updates": {}
+        }
+        
+        if new_name:
+            response["updates"]["name"] = f"'{project_name}' -> '{new_name}'"
+        if new_description:
+            response["updates"]["description"] = new_description
+        if new_technologies is not None:
+            response["updates"]["technologies"] = new_technologies
+        
+        return jsonify(response), 200
+        
+    except Exception as e:
+        if 'database' in locals():
+            database.rollback()
+        print(f"Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    
 
 @app.route("/chats", methods=["POST"])
 def create_chat():
     data = request.json
-
+    
+    # Récupérer l'utilisateur depuis le token
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return jsonify({"error": "Non authentifié"}), 401
+    
+    token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+    
+    cursor = database.cursor(dictionary=True)
+    cursor.execute("SELECT id FROM users WHERE auth_token = %s", (token,))
+    user = cursor.fetchone()
+    
+    if not user:
+        return jsonify({"error": "Utilisateur non trouvé"}), 401
+    
+    user_id = user['id']
+    project = data.get("project")
+    title = data.get("title", "Nouvelle conversation")
+    
+    if not project:
+        return jsonify({"error": "Project name is required"}), 400
+    
     cursor.execute(
-    "INSERT INTO chats (project, title) VALUES (%s, %s)",
-    (data["project"], data["title"])
-)
+        "INSERT INTO chats (user_id, project, title) VALUES (%s, %s, %s)",
+        (user_id, project, title)
+    )
     database.commit()
-
+    
     chat_id = cursor.lastrowid
+    
+    return jsonify({"id": chat_id, "title": title})
 
-    return jsonify({"id": chat_id})
 
+@app.route("/chats/<project>", methods=["GET"])
+def get_chats(project):
+    """Récupérer tous les chats d'un projet pour l'utilisateur connecté"""
+    try:
+        # Récupérer l'utilisateur depuis le token
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify([]), 200
+        
+        token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+        
+        cursor = database.cursor(dictionary=True)
+        cursor.execute("SELECT id FROM users WHERE auth_token = %s", (token,))
+        user = cursor.fetchone()
+        
+        if not user:
+            return jsonify([]), 200
+        
+        user_id = user['id']
+        
+        # Récupérer les chats de l'utilisateur pour ce projet
+        cursor.execute(
+            "SELECT * FROM chats WHERE project=%s AND user_id=%s ORDER BY created_at DESC", 
+            (project, user_id)
+        )
+        chats = cursor.fetchall()
+        
+        # S'assurer que chats est une liste (même vide)
+        if not chats:
+            chats = []
+        
+        # Récupérer les messages pour chaque chat
+        for chat in chats:
+            cursor.execute(
+                "SELECT * FROM messages WHERE chat_id=%s ORDER BY created_at ASC", 
+                (chat["id"],)
+            )
+            chat["messages"] = cursor.fetchall() or []
+        
+        return jsonify(chats), 200
+        
+    except Exception as e:
+        print(f"Error in get_chats: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify([]), 200
+    
+    
 @app.route("/messages", methods=["POST"])
 def add_message():
     data = request.json
@@ -701,6 +863,23 @@ def add_project():
     name = request.form.get("name")
     description = request.form.get("description")
     
+    # Vérification si le nom est vide
+    if not name:
+        return jsonify({"error": "Le nom du projet est requis"}), 400
+    
+    # Vérifier dans ChromaDB si le projet existe déjà
+    docs = db.get()
+    existing_projects = set()
+    for meta in docs["metadatas"]:
+        project_name = meta.get("project")
+        if project_name:
+            existing_projects.add(project_name.lower())
+    
+    if name.lower() in existing_projects:
+        return jsonify({
+            "error": f"Un projet nommé '{name}' existe déjà. Veuillez choisir un autre nom."
+        }), 400
+    
     technologies = request.form.get("technologies")
     try:
         technologies = json.loads(technologies)
@@ -714,6 +893,15 @@ def add_project():
     
     # créer dossier projet
     project_path = os.path.join(KNOWLEDGE_BASE, name)
+    
+    # === LIGNE AJOUTÉE ===
+    # Vérifier si le dossier existe déjà
+    if os.path.exists(project_path):
+        return jsonify({
+            "error": f"Un dossier pour le projet '{name}' existe déjà."
+        }), 400
+    # === FIN LIGNE AJOUTÉE ===
+    
     os.makedirs(project_path, exist_ok=True)
     
     # sauvegarder zip
@@ -787,8 +975,6 @@ def add_project():
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"Ingestion failed: {str(e)}"}), 500
-
-
 
 # ============================================
 # ADMIN ROLE 

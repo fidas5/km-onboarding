@@ -1,6 +1,6 @@
 # Export ChromaDB
 
-**Date d'export:** 2026-05-07 17:57:22
+**Date d'export:** 2026-05-14 14:24:37
 
 ## Statistiques
 

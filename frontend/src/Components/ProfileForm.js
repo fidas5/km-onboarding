@@ -11,6 +11,10 @@ function ProfileForm({ project, user, onNext, onBack }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // ✅ Debug: Afficher l'utilisateur reçu
+  console.log("ProfileForm - user received:", user);
+  console.log("ProfileForm - project received:", project);
+
   const handleChange = (tech, level) => {
     setTechLevels({
       ...techLevels,
@@ -32,6 +36,44 @@ function ProfileForm({ project, user, onNext, onBack }) {
     setIsLoading(true);
     setError(null);
 
+    // ✅ CORRECTION: Récupérer l'ID correctement
+    const userId = user?.id || user?.user_id;
+    
+    if (!userId) {
+      setError("Utilisateur non identifié. Veuillez vous reconnecter.");
+      setIsLoading(false);
+      return;
+    }
+
+    // ✅ CORRECTION: Transformer les niveaux en anglais pour le backend
+    const techLevelsForBackend = {};
+    Object.entries(techLevels).forEach(([tech, level]) => {
+      let mappedLevel = "";
+      switch(level) {
+        case "Débutant":
+          mappedLevel = "none";
+          break;
+        case "Junior":
+          mappedLevel = "junior";
+          break;
+        case "Intermédiaire":
+          mappedLevel = "intermediate";
+          break;
+        case "Senior":
+          mappedLevel = "senior";
+          break;
+        default:
+          mappedLevel = "none";
+      }
+      techLevelsForBackend[tech] = mappedLevel;
+    });
+
+    console.log("Sending to backend:", {
+      user_id: userId,
+      project: project.name,
+      technologies: techLevelsForBackend
+    });
+
     try {
       const res = await fetch("http://127.0.0.1:5000/generate-path", {
         method: "POST",
@@ -39,9 +81,9 @@ function ProfileForm({ project, user, onNext, onBack }) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          user_id: user.user_id,
+          user_id: userId,
           project: project.name,
-          technologies: techLevels
+          technologies: techLevelsForBackend
         })
       });
 
@@ -112,7 +154,7 @@ function ProfileForm({ project, user, onNext, onBack }) {
             ))
           ) : (
             <div className="error-message">
-              <p>No technologies found for this project.</p>
+              <p>Aucune technologie trouvée pour ce projet.</p>
             </div>
           )}
         </div>
