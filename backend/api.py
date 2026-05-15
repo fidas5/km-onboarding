@@ -451,62 +451,75 @@ def add_project():
 
 @app.route("/projects/<string:project_name>", methods=["PUT"])
 def modify_project(project_name):
-    """Modifier un projet existant par son NOM (description, technologies)"""
-    data             = request.json
-    new_name         = data.get("name")
-    new_description  = data.get("description")
+    """Modifier un projet existant par son NOM (description, technologies) - VERSION OPTIMISÉE"""
+    data = request.json
+    new_name = data.get("name")
+    new_description = data.get("description")
     new_technologies = data.get("technologies")
 
     if not any([new_name, new_description, new_technologies]):
         return jsonify({"error": "Au moins un champ à modifier (name, description, technologies) est requis"}), 400
 
     try:
-        docs           = db.get()
-        project_exists = False
-        ids_to_update  = []
-
-        for i, meta in enumerate(docs["metadatas"]):
-            if meta and meta.get("project") == project_name:
-                project_exists = True
-                ids_to_update.append(docs["ids"][i])
-
-        if not project_exists:
+        # ✅ SOLUTION 1 : Utiliser le filtre de Chroma (BEAUCOUP PLUS RAPIDE)
+        # Au lieu de charger TOUS les documents, on utilise la recherche filtrée
+        results = db.get(
+            where={"project": project_name}  # ← Filtre directement dans Chroma
+        )
+        
+        if not results["ids"]:
             return jsonify({"error": f"Projet '{project_name}' non trouvé"}), 404
 
+        ids_to_update = results["ids"]
+        metadatas_to_update = results["metadatas"]
+
+        # Vérifier si le nouveau nom existe déjà (si changement de nom)
         if new_name and new_name != project_name:
-            for meta in docs["metadatas"]:
-                if meta and meta.get("project") == new_name:
-                    return jsonify({"error": f"Le projet '{new_name}' existe déjà"}), 409
+            existing = db.get(where={"project": new_name})
+            if existing["ids"]:
+                return jsonify({"error": f"Le projet '{new_name}' existe déjà"}), 409
 
-        for doc_id in ids_to_update:
-            doc_index        = docs["ids"].index(doc_id)
-            current_metadata = docs["metadatas"][doc_index].copy()
-
+        # Mettre à jour les métadonnées
+        updated_metadatas = []
+        for metadata in metadatas_to_update:
+            updated_metadata = metadata.copy() if metadata else {}
+            
             if new_name:
-                current_metadata["project"] = new_name
+                updated_metadata["project"] = new_name
             if new_description:
-                current_metadata["description"] = new_description
+                updated_metadata["description"] = new_description
             if new_technologies is not None:
                 if isinstance(new_technologies, str):
                     try:
                         new_technologies = json.loads(new_technologies)
                     except:
                         new_technologies = []
-                current_metadata["technologies"] = new_technologies
+                updated_metadata["technologies"] = json.dumps(new_technologies) if isinstance(new_technologies, list) else new_technologies
 
-            db._collection.update(ids=[doc_id], metadatas=[current_metadata])
+            updated_metadatas.append(updated_metadata)
 
+        # Mise à jour en LOT (plus rapide)
+        if ids_to_update:
+            db._collection.update(
+                ids=ids_to_update,
+                metadatas=updated_metadatas
+            )
+            print(f"✅ Mise à jour de {len(ids_to_update)} chunks dans Chroma DB")
+
+        # Renommer dans MySQL si nécessaire
         if new_name and new_name != project_name:
-            conn   = get_db_connection()
+            conn = get_db_connection()
             cursor = conn.cursor()
             try:
                 cursor.execute("UPDATE chats SET project = %s WHERE project = %s", (new_name, project_name))
                 cursor.execute("UPDATE learning_paths SET project = %s WHERE project = %s", (new_name, project_name))
                 conn.commit()
+                print(f"✅ Bases de données mises à jour: {project_name} -> {new_name}")
             finally:
                 cursor.close()
                 conn.close()
 
+            # Renommer le dossier physique
             old_path = os.path.join(KNOWLEDGE_BASE, project_name)
             new_path = os.path.join(KNOWLEDGE_BASE, new_name)
             if os.path.exists(old_path):
@@ -530,8 +543,6 @@ def modify_project(project_name):
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-
-
 @app.route("/delete_project", methods=["DELETE"])
 def delete_project():
     data         = request.json

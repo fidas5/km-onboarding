@@ -4,20 +4,46 @@ import AddProjectModal from "./AddProjectModal";
 import EditProjectModal from "./EditProjectModal";
 import { FiLogOut } from "react-icons/fi";
 
+// ✅ Composant Toast personnalisé
+const Toast = ({ message, type, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`toast toast-${type}`}>
+      <div className="toast-icon">
+        {type === "success" ? "✅" : type === "error" ? "❌" : "ℹ️"}
+      </div>
+      <div className="toast-message">{message}</div>
+      <button className="toast-close" onClick={onClose}>×</button>
+    </div>
+  );
+};
+
 function ProjectSelector({ setProject, logout }) {
   const [projects, setProjects] = useState({});
   const [showForm, setShowForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(null);
   const [learningStatus, setLearningStatus] = useState({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  
+  // ✅ États pour les toasts
+  const [toast, setToast] = useState(null);
 
-  // ✅ CORRECTION: Récupérer l'utilisateur correctement
+  // ✅ Fonction pour afficher un toast
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+  };
+
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userName = user.name || "Utilisateur";
-  const userId = user.id || user.user_id || null;  // ✅ Essayer les deux formats
-  const token = localStorage.getItem("token");  // ✅ Récupérer le token aussi
+  const userId = user.id || user.user_id || null;
+  const token = localStorage.getItem("token");
 
-  // ✅ Debug: Afficher dans la console pour vérifier
   console.log("User from localStorage:", user);
   console.log("UserId:", userId);
   console.log("Token:", token);
@@ -29,7 +55,6 @@ function ProjectSelector({ setProject, logout }) {
     .toUpperCase()
     .slice(0, 2);
 
-  // Charger les projets
   const loadProjects = () => {
     fetch("http://127.0.0.1:5000/projects", {
       headers: {
@@ -42,7 +67,6 @@ function ProjectSelector({ setProject, logout }) {
       .catch((err) => console.error(err));
   };
 
-  // Supprimer un projet
   const deleteProject = async (projectName) => {
     try {
       const response = await fetch("http://127.0.0.1:5000/delete_project", {
@@ -62,18 +86,16 @@ function ProjectSelector({ setProject, logout }) {
       if (response.ok) {
         loadProjects();
         setShowDeleteConfirm(null);
-        console.log(`Projet "${projectName}" supprimé avec succès`);
+        showToast(`Projet "${projectName}" supprimé avec succès`, "success");
       } else {
-        console.error("Erreur:", data.error);
-        alert(`Erreur: ${data.error}`);
+        showToast(`Erreur: ${data.error}`, "error");
       }
     } catch (error) {
       console.error("Erreur lors de la suppression:", error);
-      alert("Erreur lors de la suppression du projet");
+      showToast("Erreur lors de la suppression du projet", "error");
     }
   };
 
-  // Modifier un projet
   const editProject = async (projectName, projectData) => {
     try {
       console.log("Modification du projet:", projectName, "avec data:", projectData);
@@ -92,18 +114,20 @@ function ProjectSelector({ setProject, logout }) {
       if (response.ok) {
         loadProjects();
         setShowEditForm(null);
-        alert("Projet modifié avec succès !");
+        
+        // ✅ Toast de succès avec détails
+        let successMessage = "Projet modifié avec succès !";
+        
+        showToast(successMessage, "success");
       } else {
-        console.error("Erreur:", data.error);
-        alert(`Erreur: ${data.error}`);
+        showToast(`Erreur: ${data.error}`, "error");
       }
     } catch (error) {
       console.error("Erreur lors de la modification:", error);
-      alert("Erreur lors de la modification du projet");
+      showToast("Erreur lors de la modification du projet", "error");
     }
   };
 
-  // ✅ CORRECTION: Vérifier l'utilisateur avant d'appeler l'API
   const checkLearningStatus = async (projectName) => {
     console.log("checkLearningStatus - userId:", userId, "projectName:", projectName);
     
@@ -135,7 +159,6 @@ function ProjectSelector({ setProject, logout }) {
     }
   };
 
-  // Charger les statuts d'apprentissage pour tous les projets
   useEffect(() => {
     if (userId && Object.keys(projects).length > 0) {
       const loadAllStatuses = async () => {
@@ -155,18 +178,15 @@ function ProjectSelector({ setProject, logout }) {
     }
   }, [projects, userId]);
 
-  // Charger les projets au montage du composant
   useEffect(() => {
     loadProjects();
   }, []);
 
-  // ✅ CORRECTION: Gérer le clic sur le bouton d'apprentissage
   const handleLearningClick = async (project) => {
     console.log("handleLearningClick - userId:", userId, "project:", project);
     
     if (!userId) {
-      console.error("User not logged in - No userId found");
-      alert("Veuillez vous reconnecter pour accéder à cette fonctionnalité");
+      showToast("Veuillez vous reconnecter pour accéder à cette fonctionnalité", "error");
       return;
     }
     
@@ -201,6 +221,15 @@ function ProjectSelector({ setProject, logout }) {
 
   return (
     <div className="layout">
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       {/* Sidebar */}
       <div className="sidebar">
         <h2 className="logo">AI Onboarding</h2>
@@ -311,6 +340,7 @@ function ProjectSelector({ setProject, logout }) {
           <AddProjectModal
             close={() => setShowForm(false)}
             refreshProjects={loadProjects}
+            showToast={showToast}  // ✅ Passer showToast au modal
           />
         </div>
       )}

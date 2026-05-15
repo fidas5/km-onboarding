@@ -112,7 +112,7 @@ function ProfileForm({ project, user, onNext, onBack }) {
     <div className="modern-container">
       <div className="modern-card">
 
-        {/* HEADER */}
+        {/* HEADER - Fixe */}
         <div className="header">
           <img src={userIcon} alt="user" className="avatar" />
           <h1>Ton niveau</h1>
@@ -129,37 +129,39 @@ function ProfileForm({ project, user, onNext, onBack }) {
           </div>
         )}
 
-        {/* TECHNOLOGIES */}
-        <div className="tech-list">
-          {project.technologies && project.technologies.length > 0 ? (
-            project.technologies.map((tech, i) => (
-              <div key={i} className="tech-card">
-                <div>
-                  <h3>{tech}</h3>
-                  <p className="tech-desc">Technologie</p>
-                </div>
+        {/* TECHNOLOGIES - SECTION AVEC SCROLL */}
+        <div className="tech-list-container">
+          <div className="tech-list">
+            {project.technologies && project.technologies.length > 0 ? (
+              project.technologies.map((tech, i) => (
+                <div key={i} className="tech-card">
+                  <div>
+                    <h3>{tech}</h3>
+                    <p className="tech-desc">Technologie</p>
+                  </div>
 
-                <select 
-                  onChange={(e) => handleChange(tech, e.target.value)}
-                  disabled={isLoading}
-                  value={techLevels[tech] || ""}
-                >
-                  <option value="">Choisir</option>
-                  <option value="Débutant">Débutant</option>
-                  <option value="Junior">Junior</option>
-                  <option value="Intermédiaire">Intermédiaire</option>
-                  <option value="Senior">Senior</option>
-                </select>
+                  <select 
+                    onChange={(e) => handleChange(tech, e.target.value)}
+                    disabled={isLoading}
+                    value={techLevels[tech] || ""}
+                  >
+                    <option value="">Choisir</option>
+                    <option value="Débutant">Débutant</option>
+                    <option value="Junior">Junior</option>
+                    <option value="Intermédiaire">Intermédiaire</option>
+                    <option value="Senior">Senior</option>
+                  </select>
+                </div>
+              ))
+            ) : (
+              <div className="error-message">
+                <p>Aucune technologie trouvée pour ce projet.</p>
               </div>
-            ))
-          ) : (
-            <div className="error-message">
-              <p>Aucune technologie trouvée pour ce projet.</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* BUTTONS */}
+        {/* BUTTONS - Fixe */}
         <div className="actions">
           <button 
             className="generate-btn" 
