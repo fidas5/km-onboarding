@@ -22,6 +22,104 @@ function ProfileForm({ project, user, onNext, onBack }) {
     });
   };
 
+  // ✅ FONCTION POUR NETTOYER ET PARSER LE JSON
+  const safeParseLearningPath = (rawData) => {
+    // Si c'est déjà un objet valide
+    if (rawData && typeof rawData === 'object' && !rawData.includes) {
+      if (rawData.modules && Array.isArray(rawData.modules)) {
+        return rawData;
+      }
+    }
+    
+    // Si c'est une string, on nettoie et on parse
+    if (typeof rawData === 'string') {
+      let cleaned = rawData;
+      
+      // 1. Enlever les balises markdown code blocks
+      cleaned = cleaned.replace(/```json\s*/g, '');
+      cleaned = cleaned.replace(/```\s*/g, '');
+      cleaned = cleaned.replace(/```/g, '');
+      
+      // 2. Enlever les espaces au début et fin
+      cleaned = cleaned.trim();
+      
+      // 3. Trouver le premier { et le dernier }
+      const firstBrace = cleaned.indexOf('{');
+      const lastBrace = cleaned.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+        cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+      }
+      
+      // 4. Nettoyer les virgules en trop
+      cleaned = cleaned.replace(/,\s*}/g, '}');
+      cleaned = cleaned.replace(/,\s*]/g, ']');
+      
+      // 5. Nettoyer les guillemets simples (si présents)
+      // cleaned = cleaned.replace(/'/g, '"'); // À utiliser avec prudence
+      
+      try {
+        const parsed = JSON.parse(cleaned);
+        if (parsed.modules && Array.isArray(parsed.modules)) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error("JSON parse error:", e);
+        console.log("Problematic JSON:", cleaned.substring(0, 500));
+      }
+    }
+    
+    // Fallback: créer un plan par défaut
+    console.warn("⚠️ Utilisation du plan par défaut");
+    return {
+      title: `Plan d'apprentissage - ${project.name}`,
+      description: "Plan personnalisé pour maîtriser ce projet",
+      total_estimated_hours: "Non défini",
+      difficulty_level: "Personnalisé",
+      modules: [
+        {
+          id: "module_1",
+          title: "Découverte du projet",
+          description: `Comprendre l'architecture et les composants principaux de ${project.name}`,
+          estimated_time: "2-3 heures",
+          steps: [
+            {
+              id: "step_1_1",
+              title: "Installation et configuration",
+              description: "Mettre en place l'environnement de développement",
+              resources: [
+                { type: "Documentation", title: "README du projet", url: "#" }
+              ],
+              exercises: []
+            },
+            {
+              id: "step_1_2",
+              title: "Compréhension de l'architecture",
+              description: "Identifier les composants clés et leurs interactions",
+              resources: [],
+              exercises: []
+            }
+          ]
+        },
+        {
+          id: "module_2",
+          title: "Maîtrise des technologies",
+          description: "Approfondir les compétences sur les technologies du projet",
+          estimated_time: "4-5 heures",
+          steps: [
+            {
+              id: "step_2_1",
+              title: "Pratique des technologies principales",
+              description: "Mettre en pratique les concepts appris",
+              resources: [],
+              exercises: []
+            }
+          ]
+        }
+      ]
+    };
+  };
+
   const handleSubmit = async () => {
     // Vérifier que toutes les technologies ont un niveau sélectionné
     const missingTechs = project.technologies.filter(
@@ -36,7 +134,6 @@ function ProfileForm({ project, user, onNext, onBack }) {
     setIsLoading(true);
     setError(null);
 
-    // ✅ CORRECTION: Récupérer l'ID correctement
     const userId = user?.id || user?.user_id;
     
     if (!userId) {
@@ -45,7 +142,7 @@ function ProfileForm({ project, user, onNext, onBack }) {
       return;
     }
 
-    // ✅ CORRECTION: Transformer les niveaux en anglais pour le backend
+    // Transformer les niveaux en anglais pour le backend
     const techLevelsForBackend = {};
     Object.entries(techLevels).forEach(([tech, level]) => {
       let mappedLevel = "";
@@ -93,7 +190,13 @@ function ProfileForm({ project, user, onNext, onBack }) {
       }
 
       const data = await res.json();
-      onNext(data.learning_path);
+      
+      // ✅ CORRECTION: Nettoyer et parser le learning_path avant de l'utiliser
+      const cleanLearningPath = safeParseLearningPath(data.learning_path);
+      
+      console.log("✅ Cleaned learning path:", cleanLearningPath);
+      onNext(cleanLearningPath);
+      
     } catch (err) {
       console.error("Error:", err);
       setError(err.message || "Une erreur s'est produite. Veuillez réessayer.");
@@ -112,7 +215,6 @@ function ProfileForm({ project, user, onNext, onBack }) {
     <div className="modern-container">
       <div className="modern-card">
 
-        {/* HEADER - Fixe */}
         <div className="header">
           <img src={userIcon} alt="user" className="avatar" />
           <h1>Ton niveau</h1>
@@ -122,14 +224,12 @@ function ProfileForm({ project, user, onNext, onBack }) {
           </p>
         </div>
 
-        {/* ERROR MESSAGE */}
         {error && (
           <div className="error-message">
             ⚠️ {error}
           </div>
         )}
 
-        {/* TECHNOLOGIES - SECTION AVEC SCROLL */}
         <div className="tech-list-container">
           <div className="tech-list">
             {project.technologies && project.technologies.length > 0 ? (
@@ -161,7 +261,6 @@ function ProfileForm({ project, user, onNext, onBack }) {
           </div>
         </div>
 
-        {/* BUTTONS - Fixe */}
         <div className="actions">
           <button 
             className="generate-btn" 
@@ -191,7 +290,6 @@ function ProfileForm({ project, user, onNext, onBack }) {
           </button>
         </div>
 
-        {/* PROGRESS INDICATOR */}
         {isLoading && (
           <div className="loading-overlay">
             <div className="loading-message">
